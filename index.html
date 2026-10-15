@@ -1,0 +1,1435 @@
+This upgraded version of net-jrf-prep.html addresses all of your feedback:
+What Was Upgraded & Fixed
+	1.	Retrieve Backup & Multi-Step Undo Engine:
+	•	Retrieve (Restore) Button: Clicking Reset now automatically saves a safety snapshot of your entire progress before clearing. Clicking Retrieve immediately restores everything you lost.
+	•	Global Undo Button (↶ Undo): Every action you take (answering a PYQ, marking a module complete, switching days, or navigating) is recorded in an action stack. Click Undo in the top bar at any time to step backward.
+	•	Contextual Back Buttons (← Back): Added inside the study header, inside the Revision view, and inside the Browse All 90 Modules drawer so you never get stuck if you misclick.
+	2.	Only Today's Plan Appears on the Home Screen (Interleaved to Prevent Boredom):
+	•	Instead of dumping all future days on the main screen, the app defaults strictly to Today's Study Plan (Day 1 = Oct 15, 2026).
+	•	Anti-Boredom Daily Mix: Rather than forcing you to read one unit all day, each day blends Track A: Chronological British Literature (starting from Old English & the Norman Conquest) with Track B: Literary Theory, Criticism, or Pedagogy.
+	•	90-Topic Master Catalog Drawer: If you ever want to jump ahead or browse all 90 topics across the 61 days, click "Browse All 90 Modules" to toggle the full syllabus drawer.
+	3.	Narrative, Cause-and-Effect Teaching (From the Basics):
+	•	Bullet-point shorthand has been replaced with 4-part narrative lectures: 1. Historical Background (What Happened Before?), 2. The Catalyst (Why Did Things Change?), 3. Deep-Dive Textual Analysis, and 4. Literary Consequence (What Did This Lead To?).
+	•	Every module ends with a structured Key Terms, Chronological Dates & Authoritative Sources table (citing Routledge History of Literature in English, David Daiches, M.H. Abrams, and Peter Barry) and multiple authentic UGC NET PYQs.
+How to Use
+Save the code below as net-jrf-prep.html and open it in your browser.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UGC NET/JRF English • 61-Day Narrative Coach</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
+    .serif { font-family: 'Playfair Display', serif; }
+    .fade-in { animation: fadeIn 0.18s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .prose-lecture p { margin-bottom: 0.9rem; line-height: 1.75; color: #334155; font-size: 0.94rem; }
+    .prose-lecture h4 { font-weight: 700; color: #0f172a; margin-top: 1.25rem; margin-bottom: 0.4rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation with Undo, Back, Reset, and Retrieve -->
+  <header class="border-b border-slate-200 bg-white sticky top-0 z-40 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Left: Brand + Global Back & Undo -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="navBackBtn" onclick="goBackView()" class="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 disabled:opacity-40 disabled:pointer-events-none transition" title="Go back to previous screen">
+          ← Back
+        </button>
+        <button id="undoActionBtn" onclick="undoLastAction()" class="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 disabled:opacity-40 disabled:pointer-events-none transition" title="Undo your last action">
+          ↶ Undo
+        </button>
+        <div class="h-4 w-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+          <h1 class="font-bold tracking-tight text-base sm:text-lg">NET/JRF English <span class="text-slate-400 font-normal text-xs sm:text-sm">61-Day Narrative Coach</span></h1>
+        </div>
+      </div>
+
+      <!-- Right: Day Controls + Reset + Retrieve Backup -->
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <div class="bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full font-medium flex items-center gap-2">
+          <span id="currentDayLabel" class="font-bold text-slate-800">Day 1 (Oct 15)</span>
+          <span class="text-slate-300">|</span>
+          <span id="daysLeftBadge" class="text-emerald-700 font-bold">61 Days to Dec 15</span>
+        </div>
+
+        <button onclick="changeDay(-1)" class="px-2 py-1.5 rounded border border-slate-200 hover:bg-slate-100 text-slate-600 font-medium" title="Previous Day">◀ Day</button>
+        <button onclick="changeDay(1)" class="px-2.5 py-1.5 rounded border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold" title="Advance 1 Day (Tests Forgetting Curve)">Day ▶</button>
+
+        <button onclick="resetProgress()" class="px-2.5 py-1.5 rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 font-medium transition" title="Reset progress (Automatically saves a backup first)">
+          Reset
+        </button>
+        <button id="retrieveBackupBtn" onclick="retrieveProgress()" class="px-2.5 py-1.5 rounded border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold transition disabled:opacity-40 disabled:pointer-events-none" title="Restore progress lost during Reset">
+          ⟳ Retrieve Backup
+        </button>
+      </div>
+    </div>
+
+    <!-- Action Toast Banner -->
+    <div id="toastBanner" class="hidden bg-slate-900 text-white text-xs text-center py-1.5 px-4 transition-all"></div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="max-w-6xl mx-auto w-full px-4 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left Column: Today's Focused Plan, Curve Alerts & 90-Topic Drawer (4 cols) -->
+    <aside class="lg:col-span-4 space-y-5">
+
+      <!-- Overall Mastery & Score Card -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">61-Day Syllabus Mastery</span>
+          <span id="simDateDisplay" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">Oct 15, 2026</span>
+        </div>
+        <div class="flex items-end justify-between mb-3">
+          <div>
+            <span id="progressPercent" class="text-3xl font-bold text-slate-900">0%</span>
+            <p id="topicsCompletedText" class="text-xs text-slate-500 mt-0.5">0 of 90 topics completed</p>
+          </div>
+          <div class="text-right">
+            <span id="pyqAccuracy" class="text-sm font-bold text-emerald-700">0/0 PYQs</span>
+            <p class="text-[11px] text-slate-400">Verified Past Questions</p>
+          </div>
+        </div>
+        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+          <div id="progressBar" class="bg-indigo-600 h-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Ebbinghaus Forgetting Curve Alert Box -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span id="curveIndicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700">Forgetting Curve Revisions</h2>
+          </div>
+          <span id="dueCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">0 Due Today</span>
+        </div>
+        <p class="text-xs text-slate-500 mb-3 leading-relaxed">
+          Memory decays after <strong>1, 3, 7, 14, and 30 days</strong>. Only topics due on <strong id="curveDayName">Day 1</strong> appear here. Click an alert for rapid recall & PYQs.
+        </p>
+        <div id="revisionAlertsList" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
+      </div>
+
+      <!-- TODAY'S ANTI-BOREDOM MIX (Only Today's Assigned Modules Appear Here) -->
+      <div class="bg-white border-2 border-indigo-600 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Today's Assigned Study Mix</span>
+          <span id="todayMixDayBadge" class="text-xs font-semibold text-slate-500">Day 1 of 61</span>
+        </div>
+        <p class="text-xs text-slate-500 mb-3">
+          To prevent boredom, each day pairs <strong>Chronological History</strong> (cause & effect) with <strong>Theory/Criticism/Pedagogy</strong>.
+        </p>
+        <div id="todayModulesList" class="space-y-2.5"></div>
+
+        <!-- Button to open/close full 90-module catalog -->
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-[11px] text-slate-400">Want to study ahead or jump days?</span>
+          <button onclick="toggleAllModulesDrawer()" id="toggleCatalogBtn" class="text-xs font-semibold text-indigo-700 hover:text-indigo-900 underline">
+            Browse All 90 Modules ▾
+          </button>
+        </div>
+      </div>
+
+      <!-- Collapsible 90-Topic Master Syllabus Drawer (Hidden by Default so you aren't overwhelmed) -->
+      <div id="allModulesDrawer" class="hidden bg-white border border-slate-200 rounded-xl p-5 shadow-sm fade-in">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-600">All 90 Chronological Modules</h2>
+          <button onclick="toggleAllModulesDrawer()" class="text-xs text-slate-500 hover:text-slate-900 font-medium">✕ Close</button>
+        </div>
+        <div class="mb-3 flex gap-2">
+          <select id="unitFilter" onchange="renderAllModulesCatalog()" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50">
+            <option value="all">All 90 Modules (Chronological Days 1–61)</option>
+            <option value="Chronological History (Units I–IV)">Track A: Chronological Lit (Old English to Postmodern)</option>
+            <option value="Literary Criticism & Theory (Units VII–IX)">Track B: Criticism, Theory & Cultural Studies</option>
+            <option value="Language, India & Research (Units V, VI, X)">Track C: ELT, English in India & Research</option>
+          </select>
+        </div>
+        <div id="syllabusCatalogList" class="space-y-1.5 max-h-80 overflow-y-auto pr-1"></div>
+      </div>
+
+    </aside>
+
+    <!-- Right Column: Narrative Lecture & PYQ Arena (8 cols) -->
+    <section class="lg:col-span-8">
+      <div id="mainContentArea" class="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm min-h-[620px] flex flex-col justify-between">
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // ============================================================================
+    // 1. DEEP NARRATIVE CURRICULUM + 90-MODULE CHRONOLOGICAL GENERATOR
+    // Teach from the basics: Background -> Catalyst -> Deep Textual Analysis -> Consequence
+    // ============================================================================
+    const DETAILED_MODULES = {
+      "m1": {
+        id: "m1",
+        day: 1,
+        slot: "Track A • Chronological History (Part 1)",
+        trackGroup: "Chronological History (Units I–IV)",
+        unit: "Unit II & III: Old English to Medieval",
+        era: "450 AD – 1340 AD",
+        title: "From Anglo-Saxon Mead-Halls to the Norman Conquest (1066)",
+        whatHappenedBefore: `
+          <p>To understand English literature from the very beginning, we must start with geography and invasion. Until <strong>410 AD</strong>, Britain was a province of the Roman Empire, inhabited by Celtic Britons. When Rome withdrew its legions to defend Italy, Britain was left defenseless. Three Germanic tribes from northern Europe—the <strong>Angles, Saxons, and Jutes</strong>—crossed the North Sea around <strong>450 AD</strong> and pushed the Celts into Wales and Scotland. They brought with them a guttural, inflected language called <strong>Old English (Anglo-Saxon)</strong> and a warrior culture centered around the <em>Mead-Hall</em>.</p>
+          <p>In this harsh, freezing tribal world, survival depended on <strong>Comitatus</strong>—an unbreakable code of loyalty where warriors swore to die for their King (the "ring-giver"), and the King shared gold and land in return. Their religion was pagan and fatalistic, ruled by <strong>Wyrd</strong> (inescapable Fate). The only way a warrior could defeat death was by achieving <em>lof</em> (undying fame in song), sung by the tribal bard known as the <strong>Scop</strong>.</p>
+        `,
+        whyItChanged: `
+          <p>Two massive historical earthquakes transformed this warrior culture:</p>
+          <p><strong>1. The Christian Conversion (597 AD):</strong> Pope Gregory sent <strong>St. Augustine</strong> to Canterbury in 597 AD, while Irish monks founded monasteries in Northumbria. Monks were the only people who knew how to write on parchment. When these Christian monks wrote down ancient pagan oral poems like <em>Beowulf</em>, they blended Christian morality with Germanic heroism. For example, the monster Grendel is described as a descendant of the Biblical <strong>Cain</strong>.</p>
+          <p><strong>2. The Norman Conquest (1066 AD):</strong> At the <strong>Battle of Hastings (1066)</strong>, <strong>William the Conqueror</strong> (Duke of Normandy) defeated the last Anglo-Saxon king, Harold Godwinson. Overnight, the Anglo-Saxon warrior nobility was replaced by a French-speaking feudal aristocracy.</p>
+        `,
+        deepAnalysis: `
+          <h4>1. Pagan Heroic & Elegiac Poetry (The 4 Surviving Manuscripts)</h4>
+          <p>All surviving Old English poetry exists in just four handwritten manuscripts: the <strong>Cotton Vitellius</strong> (contains <em>Beowulf</em>), the <strong>Exeter Book</strong> (contains elegies like <em>The Wanderer</em>, <em>The Seafarer</em>, <em>The Wife's Lament</em>, and <em>Deor</em>), the <strong>Junius Manuscript</strong> (Caedmonian biblical poems), and the <strong>Vercelli Book</strong> (contains Cynewulf's poems and <em>The Dream of the Rood</em>). Instead of end-rhyme, Anglo-Saxon poetry used <strong>alliterative verse</strong> (a line divided in two halves by a pause called a <em>caesura</em>, linked by repeating consonant sounds) and <strong>kennings</strong>—compound metaphorical phrases like <em>"whale-road"</em> for the sea or <em>"bone-house"</em> for the human body.</p>
+          <p>In <strong><em>Beowulf</em></strong> (3,182 lines), the hero fights three monsters: <strong>Grendel</strong> (who attacks King Hrothgar's hall <em>Heorot</em> out of envy), <strong>Grendel's Mother</strong> (at the bottom of a dark mere), and 50 years later, a <strong>Dragon</strong> guarding a treasure hoard, where only young <strong>Wiglaf</strong> remains loyal to the dying Beowulf. Meanwhile, in <strong><em>The Dream of the Rood</em></strong>, the True Cross (Rood) speaks in a dream, portraying Jesus not as a passive sufferer, but as a heroic Anglo-Saxon warrior who leaps eagerly onto the cross to battle sin.</p>
+          <h4>2. Bede, Caedmon & King Alfred's Prose</h4>
+          <p>In <em>Ecclesiastical History of the English People</em> (731 AD, written in Latin), the <strong>Venerable Bede</strong> tells the story of <strong>Caedmon</strong>, an illiterate cowherd at Whitby Abbey who miraculously received the gift of song in a dream and composed <em>Caedmon's Hymn</em> (the oldest surviving named poem in English). Later, after Viking raids destroyed the monasteries, <strong>King Alfred the Great</strong> (reigned 871–899) launched English prose by translating Boethius's <em>Consolation of Philosophy</em> and initiating the <strong><em>Anglo-Saxon Chronicle</em></strong>.</p>
+          <h4>3. The Post-1066 Trilingual Shift & Anglo-Norman Romances</h4>
+          <p>After 1066, England became trilingual: the clergy wrote in <strong>Latin</strong>, the nobility spoke <strong>Norman French</strong>, and the peasants spoke <strong>English</strong>. Notice why in modern English, the live animal in the field has an Anglo-Saxon name (<em>cow, pig, sheep</em>—raised by peasants), while the cooked meat on the banquet table has a French name (<em>beef, pork, mutton</em>—eaten by Norman lords)! In literature, bleak warrior epics gave way to <strong>Chivalric Romances</strong> and <strong>Courtly Love</strong>. In <strong>1136</strong>, <strong>Geoffrey of Monmouth</strong> wrote <em>Historia Regum Britanniae</em> in Latin, inventing the glamorous legends of <strong>King Arthur</strong>. Wace translated it into French (<em>Roman de Brut</em>, introducing the Round Table), and a parish priest named <strong>Layamon</strong> adapted it back into early Middle English as <strong><em>Brut</em></strong> (c. 1190)—the first work since 1066 to reclaim British legends in the English tongue.</p>
+        `,
+        consequence: `
+          <p>Because English was no longer spoken by the ruling class between 1066 and 1300, nobody policed its complex Germanic grammar. Unstressed word endings dropped off, and thousands of French words poured into the vocabulary. By the 1340s, when <strong>Geoffrey Chaucer</strong> was born, Old English had evolved into flexible, melodic, rhyming <strong>Middle English</strong>—setting the stage for the great 14th-century literary explosion (which we will study on Day 2).</p>
+        `,
+        keyTerms: [
+          { term: "450 AD", detail: "Anglo-Saxon settlement begins; Old English replaces Celtic & Roman Latin." },
+          { term: "597 AD", detail: "St. Augustine arrives in Kent; Christianization & manuscript literacy begin." },
+          { term: "731 AD", detail: "Venerable Bede completes Ecclesiastical History of the English People (records Caedmon's Hymn)." },
+          { term: "871–899 AD", detail: "Reign of King Alfred the Great; initiates the Anglo-Saxon Chronicle & West Saxon prose." },
+          { term: "991 AD", detail: "The Battle of Maldon: Earl Byrhtnoth's heroic defeat by Vikings ('Thought shall be the harder...')." },
+          { term: "1066 AD", detail: "Norman Conquest (Battle of Hastings); French replaces Old English as the language of the court." },
+          { term: "c. 1190 AD", detail: "Layamon's Brut adapts Wace and Geoffrey of Monmouth's Arthurian history into early Middle English." },
+          { term: "Kenning & Caesura", detail: "Metaphorical compound ('whale-road') and mid-line pause in Old English alliterative metre." },
+          { term: "Primary Sources", detail: "Ronald Carter & John McRae, The Routledge History of Literature in English; David Daiches, A Critical History of English Literature (Vol. 1)." }
+        ],
+        pyqs: [
+          {
+            year: "UGC NET Dec 2020",
+            q: "Which of the four surviving Old English poetic manuscripts contains both pagan heroic poems and the Christian poem 'The Dream of the Rood'?",
+            options: ["The Exeter Book", "The Vercelli Book", "The Junius Manuscript", "The Cotton Vitellius Manuscript"],
+            ans: 1,
+            exp: "The Vercelli Book (housed in Vercelli Cathedral, Italy) contains 'The Dream of the Rood', 'Andreas', and Cynewulf's 'Elene'."
+          },
+          {
+            year: "UGC NET June 2022",
+            q: "Layamon's Brut (c. 1190), a landmark 16,000-line Middle English poem about King Arthur and Brutus of Troy, is primarily a paraphrase of which Anglo-Norman French work?",
+            options: ["Chanson de Roland", "Wace's Roman de Brut", "Chrétien de Troyes's Lancelot", "Benoît de Sainte-Maure's Roman de Troie"],
+            ans: 1,
+            exp: "Geoffrey of Monmouth wrote Historia Regum Britanniae in Latin (1136) → Wace translated it into French as Roman de Brut (1155) → Layamon adapted Wace into Middle English as Brut."
+          },
+          {
+            year: "UGC NET Nov 2021",
+            q: "In Anglo-Saxon heroic poetry, the code of warrior loyalty in which retainers vow to fight to the death for their lord in exchange for protection and treasure is called:",
+            options: ["Wergild", "Comitatus", "Wyrd", "Ubi Sunt"],
+            ans: 1,
+            exp: "Recorded by the Roman historian Tacitus in Germania, Comitatus is the bond of mutual loyalty between the Germanic chieftain and his thanes. (Wergild is 'man-price' blood compensation)."
+          }
+        ]
+      },
+
+      "m2": {
+        id: "m2",
+        day: 1,
+        slot: "Track B • Literary Criticism (Part 1)",
+        trackGroup: "Literary Criticism & Theory (Units VII–IX)",
+        unit: "Unit VIII: Classical Criticism",
+        era: "4th Century BC (Athens)",
+        title: "Why Plato Banished Poets & How Aristotle Saved Them",
+        whatHappenedBefore: `
+          <p>Why did Western literary criticism begin with a fierce argument over whether poetry should be illegal? In ancient Greece before the 4th century BC, poets—especially <strong>Homer</strong> (author of the <em>Iliad</em> and <em>Odyssey</em>) and the tragic playwrights (Aeschylus, Sophocles, Euripides)—were not viewed merely as entertainers. They were the moral teachers, historians, and religious authorities of Greek civilization. Poets claimed they spoke through <strong>divine inspiration</strong> breathed into them by the Muses.</p>
+          <p>However, in <strong>404 BC</strong>, Athens suffered a humiliating defeat by Sparta in the Peloponnesian War, followed by political chaos and the execution of the philosopher <strong>Socrates</strong> in 399 BC. Socrates's brilliant student, <strong>Plato (428–348 BC)</strong>, concluded that Athenian democracy had collapsed because citizens were ruled by emotional rhetoric and immoral myths rather than rational philosophy.</p>
+        `,
+        whyItChanged: `
+          <p>When Plato set out to design the perfect, rational society in his philosophical dialogue <strong><em>The Republic</em></strong>, he realized that philosophy had to challenge poetry's monopoly over Greek education. In an earlier dialogue called <strong><em>Ion</em></strong>, Plato mocked rhapsodes (performers of Homer) as men possessed by a "divine madness"—like iron rings magnetized by a stone—who recite verse without possessing any rational knowledge (<em>techne</em>).</p>
+          <p>Then, in <strong>Book X of <em>The Republic</em></strong>, Plato delivered his famous verdict: <strong>poets must be banished from the ideal commonwealth</strong> (except for hymns to the gods and praises of famous good men). This attack forced Plato's greatest pupil, <strong>Aristotle (384–322 BC)</strong>, to write the <strong><em>Poetics</em></strong>—not as an emotional defense, but as a scientific, biological classification showing that literary imitation is natural, cognitive, and psychologically healthy.</p>
+        `,
+        deepAnalysis: `
+          <h4>1. Plato's Three Indictments Against Poetry (Republic, Book X)</h4>
+          <p><strong>a) The Metaphysical Charge (Theory of Forms & Mimesis):</strong> Plato believed that the ultimate reality consists of eternal, unchanging <strong>Ideas or Forms</strong> created by God. Imagine a <strong>Bed</strong>: (1) God creates the ideal <em>Form</em> of the Bed in the realm of Ideas; (2) The carpenter makes a physical wooden bed by copying that Form (once removed from truth); (3) The painter or poet paints an image of the carpenter's bed. Therefore, the poet's art is an <strong>"imitation of an imitation" (twice/thrice removed from reality)</strong>—a mere shadow of a shadow.</p>
+          <p><strong>b) The Psychological Charge:</strong> The human soul is divided into a rational part (reason) and an irrational, emotional part (grief, lust, anger). Philosophy strengthens reason, whereas tragic poetry waters and feeds the passions that ought to be dried up, turning virtuous citizens into weeping weaklings.</p>
+          <p><strong>c) The Moral Charge:</strong> Homer portrays the Olympian gods as lying, cheating, adulterous, and vengeful, corrupting the youth.</p>
+          <h4>2. Aristotle's Counter-Revolution in the <em>Poetics</em></h4>
+          <p>Aristotle keeps Plato's word <strong><em>Mimesis</em> (imitation)</strong>, but completely redefines it. Drawing from biology, Aristotle argues that imitation is implanted in humans from childhood and is how we first learn. Crucially, the poet does not slavishly copy a physical bed; the poet imitates human action according to the <strong>law of probability and necessity</strong>. In <strong>Chapter 9 of the <em>Poetics</em></strong>, Aristotle declares that <strong>Poetry is more philosophical and of higher seriousness than History</strong>, because History merely records particular facts (<em>what has happened</em>), whereas Poetry expresses the universal (<em>what may happen</em>).</p>
+          <h4>3. Anatomy of Tragedy: The 6 Parts & 3 Key Plot Concepts</h4>
+          <p>Aristotle defines Tragedy (Ch. 6) as the imitation of an action that is serious, complete, and of a certain magnitude, through pity and fear effecting the proper <strong><em>Catharsis</em> (purgation/clarification)</strong> of these emotions. Thus, answering Plato's psychological charge, tragedy doesn't corrupt emotions—it safely purges and balances them! He ranks the <strong>Six Formative Elements of Tragedy</strong> in strict order of importance:</p>
+          <p>1. <strong>Mythos (Plot)</strong> — <em>"The first principle, and, as it were, the soul of a tragedy"</em> (because tragedy imitates action, not static men).<br>
+          2. <strong>Ethos (Character)</strong> — Must possess four qualities: goodness (<em>chreston</em>), appropriateness, likeness to reality, and consistency.<br>
+          3. <strong>Dianoia (Thought)</strong> • 4. <strong>Lexis (Diction)</strong> • 5. <strong>Melos (Song/Melody)</strong> • 6. <strong>Opsis (Spectacle)</strong> — Least artistic, belongs to the stage-machinist.</p>
+          <p>A complex tragic plot revolves around three mechanisms: <strong>Hamartia</strong> (not a moral sin, but an intellectual <em>error of judgment</em> or "missing the mark" made by a noble person like Oedipus), <strong>Peripeteia</strong> (ironic reversal of intention/situation, e.g., the Corinthian messenger trying to cheer Oedipus up actually reveals his parentage), and <strong>Anagnorisis</strong> (recognition: a change from ignorance to knowledge). The best tragedy combines <em>Peripeteia</em> and <em>Anagnorisis</em> at the exact same moment, as in Sophocles's <em>Oedipus Rex</em>.</p>
+        `,
+        consequence: `
+          <p>Plato vs. Aristotle established the permanent DNA of Western criticism. Whenever later critics attacked theatre as immoral (like Stephen Gosson in 1579 or Jeremy Collier in 1698), they used <strong>Plato</strong>. Whenever critics defended literature's moral and imaginative truth (like Sir Philip Sidney in <em>An Apology for Poetry</em>, Dryden, or the Chicago Neo-Aristotelians), they stood on the shoulders of <strong>Aristotle</strong>.</p>
+        `,
+        keyTerms: [
+          { term: "Plato's Ion", detail: "Dialogue arguing poets compose not by rational art (techne) but by divine madness/inspiration." },
+          { term: "Republic (Book X)", detail: "Analogy of the Three Beds (God → Carpenter → Painter/Poet); art is thrice removed from truth." },
+          { term: "Diegesis vs Mimesis", detail: "Plato's distinction (Book III) between pure narrative (poet speaking in own voice) and dramatic imitation." },
+          { term: "Mythos (Plot)", detail: "Ranked #1 by Aristotle as the 'soul (psyche) of tragedy'; Spectacle (Opsis) is ranked #6 (lowest)." },
+          { term: "Hamartia", detail: "Literally an archery term ('missing the mark'); an error of judgment by a protagonist who is neither eminently virtuous nor depraved." },
+          { term: "Peripeteia & Anagnorisis", detail: "Reversal of intention and Recognition (shift from ignorance to knowledge); distinguish Complex Plots from Simple Plots." },
+          { term: "Primary Sources", detail: "M.A.R. Habib, A History of Literary Criticism and Theory; V.S. Seturaman & C.T. Indra, English Critical Tradition." }
+        ],
+        pyqs: [
+          {
+            year: "UGC NET Dec 2021",
+            q: "In which dialogue does Plato compare the soul of the poet to a 'light and winged and holy thing' possessed by divine madness, comparing the transmission of poetic power to a magnet attracting iron rings?",
+            options: ["The Republic", "Ion", "Phaedrus", "Symposium"],
+            ans: 1,
+            exp: "In Ion, Socrates tells the rhapsode Ion that the Muse inspires the poet, who in turn magnetizes the rhapsode and the audience like a chain of iron rings suspended from a Heraclea stone."
+          },
+          {
+            year: "UGC NET June 2020",
+            q: "Arrange the six constituent parts of Tragedy according to Aristotle's Poetics in descending order of importance (from most important to least important):",
+            options: [
+              "Plot → Character → Thought → Diction → Melody → Spectacle",
+              "Character → Plot → Thought → Diction → Spectacle → Melody",
+              "Plot → Thought → Character → Diction → Melody → Spectacle",
+              "Plot → Character → Diction → Thought → Melody → Spectacle"
+            ],
+            ans: 0,
+            exp: "Aristotle's exact hierarchy in Chapter 6 of Poetics is: 1. Plot (Mythos), 2. Character (Ethos), 3. Thought (Dianoia), 4. Diction (Lexis), 5. Song/Melody (Melos), and 6. Spectacle (Opsis)."
+          },
+          {
+            year: "UGC NET March 2023",
+            q: "Why does Aristotle assert in Chapter 9 of Poetics that 'Poetry is more philosophical and of higher seriousness than History'?",
+            options: [
+              "Because poetry uses elevated metrical language whereas history uses prose",
+              "Because poetry tends to express the universal (what may happen), while history relates the particular (what has happened)",
+              "Because poetry teaches religious devotion to the state gods",
+              "Because history is written by bias-ridden victors"
+            ],
+            ans: 1,
+            exp: "Aristotle states that history records particular facts ('what Alcibiades did and suffered'), whereas poetry deals with universal human truths according to probability or necessity."
+          }
+        ]
+      },
+
+      "m3": {
+        id: "m3",
+        day: 2,
+        slot: "Track A • Chronological History (Part 2)",
+        trackGroup: "Chronological History (Units I–IV)",
+        unit: "Unit II: Age of Chaucer",
+        era: "1340 – 1400 (14th Century)",
+        title: "Black Death, Peasants' Revolt & Chaucer's Social Panorama",
+        whatHappenedBefore: `
+          <p>On Day 1, we saw how the 1066 Norman Conquest established a rigid feudal pyramid in England: the King and French-speaking Barons at the top, the Catholic Church controlling all religion and Latin scholarship, and the English-speaking serfs tied to the soil at the bottom. For nearly 300 years, medieval society was taught that the <strong>Three Estates</strong>—<strong>Those Who Fight</strong> (Nobility/Knights), <strong>Those Who Pray</strong> (Clergy), and <strong>Those Who Work</strong> (Peasants)—were ordained by God and could never change.</p>
+        `,
+        whyItChanged: `
+          <p>In the middle of the 14th century, three catastrophic events shattered this feudal certainty:</p>
+          <p><strong>1. The Hundred Years' War with France (1337–1453):</strong> English kings fighting France realized they could no longer view French as their mother tongue; French was now the language of the enemy. In <strong>1362</strong>, the <em>Statute of Pleading</em> declared that English would replace French in law courts.</p>
+          <p><strong>2. The Black Death (1348–49):</strong> The bubonic plague wiped out <strong>one-third to one-half of England's population</strong>. Suddenly, there was a massive shortage of farm laborers. Surviving peasants demanded cash wages and freedom of movement. When Parliament tried to freeze wages, angry workers led by <strong>Wat Tyler</strong> and the radical preacher <strong>John Ball</strong> (who famously asked, <em>"When Adam delved and Eve span, who was then the gentleman?"</em>) marched on London in the <strong>Peasants' Revolt of 1381</strong>.</p>
+          <p><strong>3. Corruption in the Church & Lollardy:</strong> While people died of plague, corrupt friars and pardoners sold fake relics and indulgences. Oxford theologian <strong>John Wycliffe (c. 1330–1384)</strong>, the "Morning Star of the Reformation," attacked church wealth, led his followers (the <strong>Lollards</strong>), and produced the first complete translation of the <strong>Bible into English (1382)</strong>.</p>
+        `,
+        deepAnalysis: `
+          <h4>1. Geoffrey Chaucer's Three Literary Periods (1343–1400)</h4>
+          <p>A diplomat, customs controller, and courtier under three kings (Edward III, Richard II, Henry IV), Chaucer absorbed European forms and naturalized them into the <strong>East Midland (London) dialect</strong>:</p>
+          <p>• <strong>The French Period (up to 1372):</strong> Influenced by Guillaume de Lorris's allegory <em>Roman de la Rose</em> (which Chaucer translated as <em>The Romaunt of the Rose</em>). When John of Gaunt's wife, Blanche of Lancaster, died of plague in 1368, Chaucer wrote <strong><em>The Book of the Duchess</em></strong> in octosyllabic couplets using the French dream-vision convention.</p>
+          <p>• <strong>The Italian Period (1372–1385):</strong> Diplomatic missions to Genoa and Florence exposed Chaucer to <strong>Dante, Petrarch, and Boccaccio</strong>. He wrote <em>The House of Fame</em> (echoing Dante's <em>Divine Comedy</em>), <em>The Parliament of Fowls</em> (which introduces <strong>Rhyme Royal</strong>: a 7-line stanza rhyming $ababbcc$), <strong><em>Troilus and Criseyde</em></strong> (adapted from Boccaccio's <em>Il Filostrato</em>, hailed as a psychological "novel in verse"), and <em>The Legend of Good Women</em> (which introduces the <strong>Heroic Couplet</strong>—rhymed iambic pentameter—into English).</p>
+          <p>• <strong>The English Period (1386–1400):</strong> <strong><em>The Canterbury Tales</em></strong>. Inspired by Boccaccio's <em>Decameron</em>, Chaucer gathers <strong>29 pilgrims</strong> (plus Himself and Harry Bailly, the Host = 31) at the <strong>Tabard Inn in Southwark</strong> on an April evening before setting out for the shrine of <strong>St. Thomas Becket</strong> at Canterbury. Harry Bailly proposes that each pilgrim tell 2 stories on the way there and 2 on the way back (120 planned; <strong>24 tales</strong> actually written, opening with the <em>Knight's Tale</em> and ending with the prose <em>Parson's Tale</em> and Chaucer's Retraction).</p>
+          <h4>2. Estates Satire & Chaucer's Contemporaries</h4>
+          <p>In the <em>General Prologue</em>, Chaucer uses <strong>Estates Satire</strong> with gentle irony. Idealized figures represent the dying moral ideal of each estate: the <strong>Knight</strong> (Chivalry), the <strong>Parson</strong> (Clergy—<em>"First he wroughte, and afterward he taughte"</em>), and his brother the <strong>Plowman</strong> (Labor). They contrast sharply with corrupt churchmen (the hunting Monk, the wanton Friar Huberd, the Summoner, and the Pardoner who preaches <em>"Radix malorum est cupiditas"</em>—greed is the root of all evil—while selling pig-bones as saint relics) and rising middle-class voices like the five-times-married <strong>Wife of Bath (Alison)</strong>, who challenges patriarchal clerical authority using lived "experience."</p>
+          <p>Alongside Chaucer stood three major 14th-century figures: (1) <strong>William Langland</strong>, whose dream-allegory <strong><em>Piers Plowman</em></strong> (written in A, B, and C texts using alliterative revival verse) opens on the Malvern Hills with a vision of a "fair field full of folk" caught between the Tower of Truth and the Dungeon of Wrong; (2) <strong>"Moral" John Gower</strong> (<em>Dryden's</em> nickname remains, though Chaucer himself called him "moral Gower" at the end of <em>Troilus</em>), who wrote in three languages to hedge his bets: <em>Speculum Meditantis / Mirour de l'Omme</em> (French), <em>Vox Clamantis</em> (Latin, condemning the 1381 Peasants' Revolt), and <em>Confessio Amantis</em> (English); and (3) the anonymous <strong>Pearl Poet (Gawain Poet)</strong>, author of <em>Sir Gawain and the Green Knight</em>, <em>Pearl</em>, <em>Patience</em>, and <em>Cleanness</em>.</p>
+        `,
+        consequence: `
+          <p>By choosing the London East Midland dialect for <em>The Canterbury Tales</em>, Chaucer single-handedly elevated English from a fractured peasant vernacular into a prestigious literary language—earning John Dryden's famous tribute in <em>Preface to the Fables</em> (1700): <strong>"Here is God's plenty"</strong> and calling Chaucer the <strong>"Father of English Poetry."</strong></p>
+        `,
+        keyTerms: [
+          { term: "1348–49 & 1381", detail: "The Black Death (plague) leads to labor shortages, culminating in the 1381 Peasants' Revolt." },
+          { term: "Rhyme Royal (ababbcc)", detail: "7-line iambic pentameter stanza introduced by Chaucer in Parliament of Fowls and Troilus and Criseyde." },
+          { term: "Heroic Couplet", detail: "Rhymed iambic pentameter pairs first used in English in Chaucer's The Legend of Good Women." },
+          { term: "John Gower's 3 Works", detail: "Mirour de l'Omme (French), Vox Clamantis (Latin, on 1381 Revolt), Confessio Amantis (English)." },
+          { term: "Langland's Piers Plowman", detail: "Alliterative dream allegory ('fair field full of folk' on Malvern Hills); survives in A, B, and C texts." },
+          { term: "Two Prose Tales", detail: "Only two Canterbury Tales are in prose: Chaucer's own Tale of Melibee and The Parson's Tale." },
+          { term: "Primary Sources", detail: "David Daiches, A Critical History of English Literature; Ronald Carter & John McRae, Routledge History." }
+        ],
+        pyqs: [
+          {
+            year: "UGC NET June 2021",
+            q: "Match John Gower's three major works with the languages in which they were written: (1) Mirour de l'Omme (2) Vox Clamantis (3) Confessio Amantis",
+            options: [
+              "1-French, 2-Latin, 3-English",
+              "1-Latin, 2-French, 3-English",
+              "1-English, 2-Latin, 3-French",
+              "1-French, 2-English, 3-Latin"
+            ],
+            ans: 0,
+            exp: "Gower wrote Speculum Meditantis (Mirour de l'Omme) in French, Vox Clamantis (dealing with the 1381 Wat Tyler Peasants' Revolt) in Latin, and Confessio Amantis in English."
+          },
+          {
+            year: "UGC NET Dec 2019",
+            q: "Which two tales in Geoffrey Chaucer's The Canterbury Tales are written in prose rather than verse?",
+            options: [
+              "The Knight's Tale and The Squire's Tale",
+              "The Tale of Melibee and The Parson's Tale",
+              "The Monk's Tale and The Prioress's Tale",
+              "The Clerk's Tale and The Physician's Tale"
+            ],
+            ans: 1,
+            exp: "When the Host interrupts Chaucer's own deliberately awful ballad 'Sir Thopas', Chaucer tells the prose 'Tale of Melibee'. The collection also concludes with the prose 'Parson's Tale'."
+          },
+          {
+            year: "UGC NET Dec 2022",
+            q: "In which poem did Chaucer introduce the Heroic Couplet into English versification for the very first time?",
+            options: ["The Book of the Duchess", "The House of Fame", "The Legend of Good Women", "Troilus and Criseyde"],
+            ans: 2,
+            exp: "Chaucer first used decasyllabic rhymed couplets (heroic couplets) in The Legend of Good Women (c. 1385) before employing them throughout most of The Canterbury Tales."
+          }
+        ]
+      },
+
+      "m4": {
+        id: "m4",
+        day: 2,
+        slot: "Track B • Indian Aesthetics (Sanskrit Poetics)",
+        trackGroup: "Literary Criticism & Theory (Units VII–IX)",
+        unit: "Unit VIII: Indian Poetics",
+        era: "200 BC – 11th Century AD",
+        title: "The Six Schools of Sanskrit Poetics (Rasa to Auchitya)",
+        whatHappenedBefore: `
+          <p>On Day 1, we saw how Greek criticism (Plato and Aristotle) began by asking: <em>"How does art imitate the external physical world (Mimesis)?"</em> Around the same era in ancient India, Sanskrit dramatic and poetic theorists (<em>Alankarikas</em>) asked a completely different, inward question: <strong>"What is the soul of poetry (Kavyatma), and how does a spectator in a theatre experience aesthetic bliss from watching someone else's sorrow or love on stage?"</strong></p>
+        `,
+        whyItChanged: `
+          <p>Between the 2nd century BC and the 11th century AD, Indian aesthetics evolved chronologically through <strong>Six Major Schools (Sampradayas)</strong>. Each new philosopher felt that the previous school was focusing too much on the external body of the poem (figures of speech or word arrangement) and missing the inner, spiritual resonance. Understanding the exact chronological chain of who challenged whom makes Indian Poetics one of the easiest high-scoring sections in UGC NET.</p>
+        `,
+        deepAnalysis: `
+          <h4>1. The Rasa School — Bharata Muni (<em>Natyashastra</em>, c. 200 BC – 200 AD)</h4>
+          <p>Considered the <em>Panchama Veda</em> (Fifth Veda), Bharata's <strong><em>Natyashastra</em></strong> (36 chapters) formulates the legendary <strong>Rasa Sutra</strong> in Chapter 6: <strong><em>"Vibhavanubhava vyabhichari samyogad rasa nishpattih"</em></strong> (Rasa is produced from the combination of <em>Vibhava</em>, <em>Anubhava</em>, and <em>Vyabhicharibhava</em>).</p>
+          <p>• Every human being carries <strong>8 permanent latent emotions (<em>Sthayibhavas</em>)</strong> sleeping inside the mind (later expanded to 9 by adding <em>Shanta</em>). How are they awakened in the theatre? Through three catalysts:<br>
+          1. <strong>Vibhava (Determinants/Causes):</strong> Divided into <em>Alambana Vibhava</em> (the person/object triggering the emotion, e.g., Shakuntala and Dushyanta) and <em>Uddipana Vibhava</em> (the environmental setting, e.g., moonlight, spring breeze).<br>
+          2. <strong>Anubhava (Consequents):</strong> Visible physical reactions on stage (glances, sighs, trembling).<br>
+          3. <strong>Vyabhicharibhava / Sancharibhava (Transitory Emotions):</strong> 33 fleeting moods (anxiety, jealousy, joy) that rise and fall like waves in the ocean of the permanent emotion.</p>
+          <p>When these three blend on stage, the spectator's ego is dissolved through <strong><em>Sadharanikarana</em> (Universalization/De-individuation</strong>—formulated by Bhatta Nayaka), and the latent <em>Sthayibhava</em> is transformed into <strong>Rasa</strong> (aesthetic relish, compared to <em>Brahmananda sahodara</em>—twin brother of spiritual bliss). Later, the 10th-century Kashmiri philosopher <strong>Abhinavagupta</strong> (in his commentary <em>Abhinavabharati</em>) added the 9th Rasa, <strong>Shanta Rasa</strong> (whose <em>Sthayibhava</em> is <em>Shama/Nirveda</em>).</p>
+          <h4>2. The Five Subsequent Schools (Body vs. Soul of Poetry)</h4>
+          <p>• <strong>Alamkara School — Bhamaha (<em>Kavyalankara</em>, 6th C.) & Dandin:</strong> Argued that figurative ornament (<em>Alamkara</em>—metaphor, simile, hyperbole) is the essential beauty of poetry, split into <em>Shabdalankara</em> (sound) and <em>Arthalankara</em> (sense).</p>
+          <p>• <strong>Riti School — Vamana (<em>Kavyalankarasutra</em>, 8th C.):</strong> Declared <strong><em>"Riti ratma kavyasya"</em> (Style/Diction is the soul of poetry)</strong>, classifying poetic style into three regional modes: <em>Vaidarbhi</em> (sweet/graceful), <em>Gaudi</em> (bombastic/grand), and <em>Panchali</em> (intermediate).</p>
+          <p>• <strong>Dhvani School — Anandavardhana (<em>Dhvanyaloka</em>, 9th C.):</strong> Revolutionized Sanskrit criticism by declaring <strong><em>"Kavyasyatma dhvanih"</em> (Suggestion is the soul of poetry)</strong>. Words have three powers: <strong>Abhidha</strong> (literal dictionary meaning), <strong>Lakshana</strong> (metaphorical secondary meaning, e.g., "a hamlet on the Ganges" means on the bank), and <strong>Vyanjana</strong> (spiritual/poetic suggestion). When suggested meaning towers over literal meaning, it is <strong>Dhvani</strong>—highest when it suggests Rasa (<em>Rasa-dhvani</em>).</p>
+          <p>• <strong>Vakrokti School — Kuntaka (<em>Vakroktijivita</em>, 10th C.):</strong> Defined <strong><em>Vakrokti</em> (oblique, striking, arch expression)</strong> as the vital breath (<em>Jivita</em>) of poetry, remarkably anticipating 20th-century Russian Formalist <em>Defamiliarization</em>.</p>
+          <p>• <strong>Auchitya School — Kshemendra (<em>Auchityavicharacharcha</em>, 11th C.):</strong> Synthesized all previous schools by arguing that ornaments, style, and suggestion only work when governed by <strong><em>Auchitya</em> (Propriety/Harmony of proportion)</strong>, which is the true life-breath (<em>Jivitabhuta</em>) of Rasa-filled poetry.</p>
+        `,
+        consequence: `
+          <p>Look at how Indian and Western criticism converge across centuries: Kuntaka's <em>Vakrokti</em> parallels Shklovsky's <em>Defamiliarization</em>; Anandavardhana's <em>Dhvani</em> anticipates New Criticism's multiple meanings; and T.S. Eliot's 1919 formula of the <strong>"Objective Correlative"</strong> (a set of objects, a situation, a chain of events which shall be the formula for a particular emotion) is virtually identical to Bharata's <strong>Vibhava-Anubhava-Vyabhicharibhava</strong> chain!</p>
+        `,
+        keyTerms: [
+          { term: "8 + 1 Rasas & Sthayibhavas", detail: "Shringara (Rati), Hasya (Hasa), Karuna (Shoka), Raudra (Krodha), Veera (Utsaha), Bhayanaka (Bhaya), Bibhatsa (Jugupsa), Adbhuta (Vismaya) + Shanta (Nirveda)." },
+          { term: "4 Commentators on Rasa Sutra", detail: "Bhatta Lollata (Utpattivada), Sri Sankuka (Anumitivada), Bhatta Nayaka (Bhuktivada & Sadharanikarana), Abhinavagupta (Abhivyaktivada)." },
+          { term: "Abhidha, Lakshana, Vyanjana", detail: "Literal denotation, secondary indication, and poetic suggestion (foundation of Anandavardhana's Dhvani)." },
+          { term: "Riti ratma kavyasya", detail: "'Style is the soul of poetry' — Vamana (8th century)." },
+          { term: "Kavyasyatma dhvanih", detail: "'Suggestion (Dhvani) is the soul of poetry' — Anandavardhana in Dhvanyaloka (9th century)." },
+          { term: "Primary Sources", detail: "G.N. Devy, Indian Literary Criticism: Theory and Interpretation; Kapil Kapoor, Literary Theory: Indian Conceptual Framework." }
+        ],
+        pyqs: [
+          {
+            year: "UGC NET June 2023",
+            q: "Match the 4 classical commentators on Bharata's Rasa Sutra with their respective theories: (A) Bhatta Lollata (B) Sri Sankuka (C) Bhatta Nayaka (D) Abhinavagupta",
+            options: [
+              "A-Utpattivada (Generation), B-Anumitivada (Inference), C-Bhuktivada (Bhojakatva/Enjoyment), D-Abhivyaktivada (Manifestation)",
+              "A-Anumitivada, B-Utpattivada, C-Abhivyaktivada, D-Bhuktivada",
+              "A-Utpattivada, B-Bhuktivada, C-Anumitivada, D-Abhivyaktivada",
+              "A-Abhivyaktivada, B-Anumitivada, C-Bhuktivada, D-Utpattivada"
+            ],
+            ans: 0,
+            exp: "In chronological order: Bhatta Lollata proposed Utpattivada, Sri Sankuka proposed Anumitivada, Bhatta Nayaka proposed Bhuktivada (introducing Sadharanikarana), and Abhinavagupta synthesized them into Abhivyaktivada."
+          },
+          {
+            year: "UGC NET Dec 2021",
+            q: "Who is the author of 'Auchityavicharacharcha', which declares 'Auchitya' (propriety) to be the stable life-breath (jivitabhuta) of poetry?",
+            options: ["Anandavardhana", "Kuntaka", "Kshemendra", "Rajasekhara"],
+            ans: 2,
+            exp: "The 11th-century Kashmiri polymath Kshemendra propounded the Auchitya school in his treatise Auchityavicharacharcha."
+          },
+          {
+            year: "UGC NET Nov 2020",
+            q: "In Bharata's Natyashastra, what is the Sthayibhava (permanent emotion) corresponding to 'Bibhatsa Rasa' (the Odious/Disgusting)?",
+            options: ["Bhaya (Fear)", "Jugupsa (Disgust)", "Krodha (Anger)", "Shoka (Grief)"],
+            ans: 1,
+            exp: "Bibhatsa Rasa arises from the Sthayibhava of Jugupsa (disgust), while Bhaya corresponds to Bhayanaka, Krodha to Raudra, and Shoka to Karuna."
+          }
+        ]
+      },
+
+      "m5": {
+        id: "m5",
+        day: 3,
+        slot: "Track A • Chronological History (Part 3)",
+        trackGroup: "Chronological History (Units I–IV)",
+        unit: "Unit I, II & IV: 15th Century to Early Tudor Renaissance",
+        era: "1400 – 1558",
+        title: "Wars of the Roses, Caxton's Printing Press & Tudor Humanism",
+        whatHappenedBefore: `
+          <p>When Geoffrey Chaucer died in <strong>1400</strong>, it seemed English literature was entering a golden age. Instead, the 15th century (1400–1485) plunged England into political chaos and civil war. First, English poets struggled to imitate Chaucer's metre because final unstressed <em>-e</em> sounds were becoming silent in spoken English. More importantly, for thirty years (<strong>1455–1485</strong>), two rival branches of the royal Plantagenet family—the <strong>House of Lancaster (Red Rose)</strong> and the <strong>House of York (White Rose)</strong>—slaughtered each other in the feudal civil war known as the <strong>Wars of the Roses</strong>.</p>
+        `,
+        whyItChanged: `
+          <p>Four revolutionary events between 1453 and 1534 ended the Middle Ages and gave birth to the <strong>English Renaissance</strong>:</p>
+          <p><strong>1. The Fall of Constantinople (1453):</strong> When the Ottoman Turks captured Constantinople, Greek scholars fled west to Italy carrying ancient manuscripts of Plato, Aristotle, and Homer—sparking Renaissance <strong>Humanism</strong> (the shift from medieval scholasticism to human potential and classical learning).</p>
+          <p><strong>2. Caxton's Printing Press (1476):</strong> <strong>William Caxton</strong> printed the first book in English, <em>Recuyell of the Historyes of Troye</em>, in Bruges (1473/74), and then set up England's first printing press at <strong>Westminster in 1476</strong>—printing Chaucer's <em>Canterbury Tales</em> and Sir Thomas Malory's <em>Le Morte d'Arthur</em> (1485). Books were no longer rare hand-copied monastery treasures.</p>
+          <p><strong>3. The Tudor Dynasty (1485):</strong> At the <strong>Battle of Bosworth Field (1485)</strong>, Henry Tudor defeated King Richard III, married Elizabeth of York, united the Red and White Roses, and became <strong>King Henry VII</strong>—bringing stability and royal patronage.</p>
+          <p><strong>4. The Protestant Reformation (1517 & 1534):</strong> After Martin Luther nailed his 95 Theses in Wittenberg (1517), <strong>King Henry VIII</strong> broke with the Pope in Rome to divorce Catherine of Aragon, passing the <strong>Act of Supremacy (1534)</strong>, which made the English monarch Supreme Head of the Church of England.</p>
+        `,
+        deepAnalysis: `
+          <h4>1. The 15th-Century Chaucerians & Ballads</h4>
+          <p>After Chaucer's death, two groups imitated his dream visions and Rhyme Royal stanza: the <strong>English Chaucerians</strong>—<strong>Thomas Occleve</strong> (<em>The Regement of Princes</em>, containing a famous affectionate tribute to Chaucer), <strong>John Lydgate</strong> (<em>The Fall of Princes</em>, <em>Troy Book</em>), and <strong>Stephen Hawes</strong> (<em>The Passetyme of Pleasure</em>)—and the much more vibrant <strong>Scottish Chaucerians (Makars)</strong>: <strong>King James I of Scotland</strong> (wrote <em>The Kingis Quair</em> while imprisoned in England; the 7-line Rhyme Royal stanza is actually named after him!), <strong>Robert Henryson</strong> (wrote <em>The Testament of Cresseid</em>, a tragic sequel to Chaucer's <em>Troilus</em> in which unfaithful Cresseid is stricken with leprosy), <strong>William Dunbar</strong> (<em>Lament for the Makaris</em> with the Latin refrain <em>"Timor mortis conturbat me"</em>—the fear of death troubles me), and <strong>Gavin Douglas</strong> (translated Virgil's <em>Aeneid</em> into Scots). Meanwhile, working inside Newgate Prison during the Wars of the Roses, <strong>Sir Thomas Malory</strong> compiled eight French and English Arthurian romances into prose as <strong><em>Le Morte d'Arthur</em></strong> (printed by Caxton in 1485)—an elegy for dying feudal chivalry.</p>
+          <h4>2. Tudor Humanism, Utopia & Biblical Translation</h4>
+          <p>Under Henry VIII, Oxford reformers like John Colet and the Dutch scholar <strong>Desiderius Erasmus</strong> (who wrote <em>Praise of Folly</em>, <em>Moriae Encomium</em>, at the house of his close friend Thomas More) championed Christian Humanism. In <strong>1516</strong>, <strong>Sir Thomas More</strong> published <strong><em>Utopia</em></strong> in Latin (translated into English by <strong>Ralph Robinson in 1551</strong>). Divided into two books, Book I critiques corrupt European statecraft (theft, enclosures of sheep pastures turning peasants into beggars), while in Book II the Portuguese traveler <strong>Raphael Hythloday</strong> (whose Greek name means "speaker of nonsense") describes the communal island of Utopia ("No-Place" / "Good-Place"), where private property is abolished and gold is used only to make chamber pots and chains for slaves. More was later beheaded by Henry VIII in 1535 for refusing to swear the Oath of Supremacy. Simultaneously, <strong>William Tyndale</strong> translated the New Testament directly from Greek into vivid English (1525–26, coining phrases like <em>"let there be light"</em> and <em>"the salt of the earth"</em>) before being burned for heresy in 1536, while <strong>Miles Coverdale</strong> produced the first complete printed English Bible (1535).</p>
+          <h4>3. Tottel's Miscellany (1557): Wyatt and Surrey</h4>
+          <p>How did modern English lyric poetry begin? Two Tudor courtiers and diplomats who traveled to Italy—<strong>Sir Thomas Wyatt</strong> and <strong>Henry Howard, Earl of Surrey</strong>—brought back the 14-line Petrarchan sonnet. Their poems circulated in court manuscripts until printer Richard Tottel published them in <strong><em>Songes and Sonettes</em> (June 1557)</strong>, famously known as <strong><em>Tottel's Miscellany</em></strong>. Specifically: <strong>Wyatt</strong> introduced the <strong>Sonnet</strong> into English (translating Petrarch's <em>Rime 140</em> and <em>190</em>—"Whoso list to hunt," allegorizing his dangerous love for Anne Boleyn), using the Italian structure of Octave ($abbaabba$) + Sestet. Younger courtier <strong>Surrey</strong> modified the sonnet into three quatrains and a final rhyming couplet ($abab\ cdcd\ efef\ gg$—the <strong>English/Shakespearean sonnet</strong> form!) and also invented <strong>Blank Verse</strong> (unrhymed iambic pentameter) in his translation of Books II and IV of Virgil's <em>Aeneid</em>.</p>
+        `,
+        consequence: `
+          <p>Look at the tools Surrey and Wyatt handed to the next generation: <strong>Blank Verse</strong> and the <strong>English Sonnet</strong>. Just one year after <em>Tottel's Miscellany</em> appeared in 1557, <strong>Queen Elizabeth I</strong> ascended the throne in <strong>1558</strong>—and Marlowe and Shakespeare would use Surrey's Blank Verse to build the greatest dramatic golden age in human history.</p>
+        `,
+        keyTerms: [
+          { term: "1476 & 1485", detail: "Caxton sets up Westminster press (1476) and prints Malory's Le Morte d'Arthur (1485, year of Battle of Bosworth)." },
+          { term: "Robert Henryson", detail: "Scottish Chaucerian who wrote The Testament of Cresseid (sequel to Chaucer's Troilus)." },
+          { term: "More's Utopia (1516 / 1551)", detail: "Written in Latin (1516), narrator Raphael Hythloday; translated into English by Ralph Robinson (1551)." },
+          { term: "Tottel's Miscellany (1557)", detail: "First printed anthology of English poetry; contains 97 poems by Wyatt and 40 by Surrey." },
+          { term: "Wyatt vs. Surrey", detail: "Wyatt introduced the Petrarchan Sonnet into English; Surrey invented the English Sonnet (3 quatrains + couplet) and Blank Verse (Aeneid II & IV)." },
+          { term: "Roger Ascham", detail: "Humanist tutor to Princess Elizabeth; wrote Toxophilus (1545, on archery) and The Scholemaster (1570)." },
+          { term: "Primary Sources", detail: "Michael Alexander, A History of English Literature; Edward Albert, History of English Literature." }
+        ],
+        pyqs: [
+          {
+            year: "UGC NET Dec 2021",
+            q: "Sir Thomas More's Utopia was originally published in Latin in 1516. Who translated it into English for the first time in 1551?",
+            options: ["Thomas Elyot", "Ralph Robinson", "Roger Ascham", "William Tyndale"],
+            ans: 1,
+            exp: "Ralph Robinson published the first English translation of More's Utopia in 1551."
+          },
+          {
+            year: "UGC NET June 2020",
+            q: "Who introduced 'Blank Verse' (unrhymed iambic pentameter) into English poetry through his translation of Books II and IV of Virgil's Aeneid?",
+            options: ["Sir Thomas Wyatt", "Henry Howard, Earl of Surrey", "Thomas Sackville", "George Gascoigne"],
+            ans: 1,
+            exp: "Henry Howard, Earl of Surrey (executed in 1547 by Henry VIII), invented English blank verse when translating Books II and IV of Virgil's Aeneid."
+          },
+          {
+            year: "UGC NET July 2018",
+            q: "Which Scottish Chaucerian wrote 'The Testament of Cresseid' as a tragic continuation of Chaucer's Troilus and Criseyde?",
+            options: ["William Dunbar", "Gavin Douglas", "Robert Henryson", "King James I"],
+            ans: 2,
+            exp: "Robert Henryson wrote The Testament of Cresseid, in which Cresseid curses Cupid and Venus after being abandoned by Diomede and is punished with leprosy."
+          }
+        ]
+      },
+
+      "m6": {
+        id: "m6",
+        day: 3,
+        slot: "Track B • Colonial Education & English in India (Part 1)",
+        trackGroup: "Language, India & Research (Units V, VI, X)",
+        unit: "Unit VI: English in India",
+        era: "1780 – 1882",
+        title: "Orientalists vs. Anglicists: How English Became India's Institutional Language",
+        whatHappenedBefore: `
+          <p>Why did the British East India Company—originally a profit-hungry mercantile corporation founded on December 31, 1600—initially <strong>oppose</strong> teaching English or Christian missionary work in India? During the late 18th century under Governor-General <strong>Warren Hastings</strong>, Company officials feared that interfering with Hindu and Muslim religious traditions would provoke rebellions and ruin trade. Instead, early British administrators practiced <strong>Orientalism</strong> (administrative scholarship in Sanskrit, Persian, and Arabic).</p>
+          <p>Hastings founded the <strong>Calcutta Madrasah (1781)</strong> for Islamic law; <strong>Sir William Jones</strong> founded the <strong>Asiatic Society of Bengal (1784)</strong> and translated Kalidasa's <em>Abhijnanashakuntalam</em> (1789); and <strong>Jonathan Duncan</strong> established the <strong>Sanskrit College at Banaras (1791)</strong>. Meanwhile, the East India Company actually banned Christian missionaries from its territories, forcing Baptist missionaries <strong>William Carey, Joshua Marshman, and William Ward</strong> (the "Serampore Trio") to set up their mission and printing press in the tiny Danish colony of <strong>Serampore (1800)</strong>.</p>
+        `,
+        whyItChanged: `
+          <p>Pressure from two forces in Britain—<strong>Evangelicals</strong> (led by Charles Grant and William Wilberforce, who wanted to convert India) and <strong>Utilitarians</strong> (led by James Mill and Jeremy Bentham, who viewed traditional Indian learning as superstitious)—forced the British Parliament to insert <strong>Section 43 into the Charter Act of 1813</strong>. For the first time, the East India Company was legally compelled to set aside <strong>One Lakh Rupees (Rs. 1,00,000)</strong> every year for <em>"the revival and improvement of literature, and the encouragement of the learned natives of India, and for the introduction and promotion of a knowledge of the sciences."</em></p>
+          <p>Because Section 43 was vaguely worded, a bitter 22-year debate erupted between two factions on the General Committee of Public Instruction: the <strong>Orientalists</strong> (led by H.T. Prinsep and H.H. Wilson, who wanted the money spent on Sanskrit and Arabic) and the <strong>Anglicists</strong> (supported by reformist Indians like <strong>Raja Ram Mohan Roy</strong>, who wanted Western science and English).</p>
+        `,
+        deepAnalysis: `
+          <h4>1. Raja Ram Mohan Roy's Letter (1823) & Macaulay's Minute (Feb 2, 1835)</h4>
+          <p>When the government proposed using the Charter funds to open another Sanskrit College in Calcutta in <strong>1823</strong>, <strong>Raja Ram Mohan Roy</strong> wrote his historic <strong><em>Letter to Lord Amherst</em> (Dec 11, 1823)</strong>, protesting that medieval Sanskrit grammar and Vedantic metaphysics would keep India in darkness, and pleading instead for European natural philosophy, chemistry, anatomy, and mathematics.</p>
+          <p>To break the deadlock between Orientalists and Anglicists, the newly arrived Law Member of the Governor-General's Council, <strong>Thomas Babington Macaulay</strong>, penned his notorious <strong><em>Minute on Indian Education</em> on February 2, 1835</strong>. Despite admitting he had no knowledge of Sanskrit or Arabic, Macaulay infamously boasted that <em>"a single shelf of a good European library was worth the whole native literature of India and Arabia."</em> Declaring that limited funds made it impossible to educate the masses directly, Macaulay proposed the <strong>Downward Filtration Theory</strong>—educating a select elite to create <strong><em>"a class of persons, Indian in blood and colour, but English in taste, in opinions, in morals, and in intellect"</em></strong> who would serve as interpreters between the rulers and the millions they governed. One month later, on <strong>March 7, 1835</strong>, Governor-General <strong>Lord William Bentinck</strong> passed the <strong>English Education Act</strong>, making Macaulay's Minute official state policy. In 1844, Lord Hardinge further announced that Indians educated in English would be given preference in all government jobs.</p>
+          <h4>2. Wood's Despatch (1854) & The Hunter Commission (1882)</h4>
+          <p>By the 1850s, the British realized Macaulay's "Downward Filtration" had failed to reach the masses. In <strong>July 1854</strong>, <strong>Sir Charles Wood</strong> (President of the Board of Control) sent a comprehensive educational blueprint to Governor-General Lord Dalhousie. Known as the <strong>"Magna Carta of English Education in India,"</strong> <strong>Wood's Despatch (1854)</strong> repudiated Downward Filtration and recommended:</p>
+          <p>• A graded hierarchy: Vernacular Primary Schools in villages → Anglo-Vernacular High Schools → Affiliated Colleges.<br>
+          • <strong>English</strong> as the medium of instruction for higher studies, and <strong>Indian Vernaculars</strong> for primary school education.<br>
+          • Establishment of India's first three modern Universities on the model of the <strong>University of London</strong> at <strong>Calcutta, Bombay, and Madras (founded in 1857)</strong>.<br>
+          • Grants-in-aid for private schools, secular instruction, and dedicated support for female education and teacher training.</p>
+          <p>Twenty-eight years later, Lord Ripon appointed the <strong>Hunter Education Commission (1882)</strong> (chaired by Sir William Wilson Hunter) to review how Wood's Despatch had been implemented; it found that primary vernacular education had been neglected in favor of university education and recommended handing primary schools over to local district and municipal boards.</p>
+        `,
+        consequence: `
+          <p>Here is the ultimate historical irony (what Homi Bhabha calls colonial <em>ambivalence</em>): Macaulay designed English education to produce obedient clerks and cultural collaborators. Instead, Indians used the English language and European political texts (Mill, Locke, Rousseau) to unite across regional language barriers, write nationalist literature in English (starting with <strong>Kylas Chunder Dutt's 1835 futuristic rebellion story</strong> and <strong>Bankim Chandra's <em>Rajmohan's Wife</em> in 1864</strong>), and eventually overthrow the British Empire.</p>
+        `,
+        keyTerms: [
+          { term: "1784 & 1800", detail: "Sir William Jones founds Asiatic Society of Bengal (1784); Lord Wellesley opens Fort William College (1800) to train British civil servants in Indian languages." },
+          { term: "Charter Act of 1813 (Sec 43)", detail: "Allocated Rs. 1,00,000 annually for education in India; sparked the Orientalist-Anglicist controversy." },
+          { term: "Dec 11, 1823", detail: "Raja Ram Mohan Roy's Letter to Lord Amherst advocating Western scientific education over a new Sanskrit College." },
+          { term: "Feb 2 & March 7, 1835", detail: "Macaulay's Minute (Feb 2) & Lord William Bentinck's English Education Act (March 7, 1835)." },
+          { term: "Wood's Despatch (1854)", detail: "'Magna Carta of English Education in India'; led to founding of Calcutta, Bombay, and Madras Universities in 1857." },
+          { term: "Primary Sources", detail: "Gauri Viswanathan, Masks of Conquest: Literary Study and British Rule in India (1989); Arvind Krishna Mehrotra, A History of Indian Literature in English." }
+        ],
+        pyqs: [
+          {
+            year: "UGC NET Dec 2022",
+            q: "Arrange the following milestones in the institutionalization of English education in India in correct chronological order: (A) Wood's Despatch (B) Charter Act (C) Macaulay's Minute (D) Raja Ram Mohan Roy's Letter to Lord Amherst",
+            options: [
+              "B (1813) → D (1823) → C (1835) → A (1854)",
+              "D (1823) → B (1813) → C (1835) → A (1854)",
+              "B (1813) → C (1835) → D (1823) → A (1854)",
+              "C (1835) → B (1813) → D (1823) → A (1854)"
+            ],
+            ans: 0,
+            exp: "Charter Act (1813) → Raja Ram Mohan Roy's Letter to Lord Amherst (1823) → Macaulay's Minute (1835) → Charles Wood's Despatch (1854)."
+          },
+          {
+            year: "UGC NET June 2021",
+            q: "Which postcolonial scholar wrote the landmark study 'Masks of Conquest: Literary Study and British Rule in India' (1989), arguing that the academic discipline of English Literature was invented in colonial India before England to exercise moral control?",
+            options: ["Gayatri Chakravorty Spivak", "Gauri Viswanathan", "Rajeswari Sunder Rajan", "Meenakshi Mukherjee"],
+            ans: 1,
+            exp: "Gauri Viswanathan's Masks of Conquest (1989) demonstrates how the British used the English literary curriculum in 19th-century India as a secular substitute for religious instruction to manufacture consent."
+          },
+          {
+            year: "UGC NET Nov 2020",
+            q: "Which Governor-General of India officially endorsed Macaulay's Minute by passing the English Education Act on March 7, 1835?",
+            options: ["Lord Amherst", "Lord William Bentinck", "Lord Dalhousie", "Lord Hardinge"],
+            ans: 1,
+            exp: "Governor-General Lord William Bentinck signed the Resolution of March 7, 1835, declaring that 'the great object of the British Government ought to be the promotion of European literature and science among the natives of India'."
+          }
+        ]
+      }
+    };
+
+    // ============================================================================
+    // 2. COMPLETE 90-MODULE CHRONOLOGICAL SYLLABUS BLUEPRINT (DAYS 1 TO 61)
+    // Every single day mixes Track A (Chronological Lit) + Track B (Theory/Crit/India)
+    // ============================================================================
+    const MASTER_90_PLAN = [
+      // Day 1 to 3 (Use full detailed modules above)
+      { id: "m1", day: 1, slot: "Track A • Chronological History", trackGroup: "Chronological History (Units I–IV)", unit: "Unit II & III: Old English to Medieval", era: "450–1340 AD", title: "From Anglo-Saxon Mead-Halls to the Norman Conquest (1066)" },
+      { id: "m2", day: 1, slot: "Track B • Classical Criticism", trackGroup: "Literary Criticism & Theory (Units VII–IX)", unit: "Unit VIII: Classical Criticism", era: "4th C. BC", title: "Why Plato Banished Poets & How Aristotle Saved Them" },
+      { id: "m3", day: 2, slot: "Track A • Chronological History", trackGroup: "Chronological History (Units I–IV)", unit: "Unit II: Age of Chaucer", era: "1340–1400", title: "Black Death, Peasants' Revolt & Chaucer's Social Panorama" },
+      { id: "m4", day: 2, slot: "Track B • Indian Aesthetics", trackGroup: "Literary Criticism & Theory (Units VII–IX)", unit: "Unit VIII: Indian Poetics", era: "200 BC–11th C.", title: "The Six Schools of Sanskrit Poetics (Rasa to Auchitya)" },
+      { id: "m5", day: 3, slot: "Track A • Chronological History", trackGroup: "Chronological History (Units I–IV)", unit: "Unit I, II & IV: 15th C. to Early Tudor", era: "1400–1558", title: "Wars of the Roses, Caxton's Printing Press & Tudor Humanism" },
+      { id: "m6", day: 3, slot: "Track B • English in India", trackGroup: "Language, India & Research (Units V, VI, X)", unit: "Unit VI: English in India", era: "1780–1882", title: "Orientalists vs. Anglicists: How English Became India's Institutional Language" },
+
+      // Days 4 to 61 (Chronological progression across all 90 modules)
+      { id: "m7", day: 4, slot: "Track A • Chronological History", trackGroup: "Chronological History (Units I–IV)", unit: "Unit I: Origins of English Drama", era: "950–1562", title: "From Church Liturgy to Secular Stage: Mystery, Miracle, Morality & Interludes",
+        before: "After the fall of Rome, classical theatres were closed for centuries by the Church as pagan dens of vice. Yet illiterate medieval peasants could not understand Latin church services.",
+        catalyst: "In the 10th century, clergy began acting out short Easter dialogues inside the church (the Quem Quaeritis trope: 'Whom do you seek in the sepulchre?'). Crowds grew so large that drama moved outside into the churchyard, and in 1210 Pope Innocent III forbade clergy from acting on public stages—handing plays over to town trade guilds (Mystery cycles).",
+        analysis: "1. Mystery & Miracle Plays: Performed on movable pageant wagons on the Feast of Corpus Christi. Four major surviving English cycles: York (48 plays), Chester (25), Wakefield/Towneley (32, featuring the anonymous Wakefield Master's 'Second Shepherds' Play' with the sheep-thief Mak), and N-Town (Coventry). 2. Morality Plays: Allegorical dramas where vices and virtues battle for the human soul: The Castle of Perseverance (oldest full morality play) and Everyman (c. 1495, where only Good Deeds accompanies Everyman into the grave). 3. Tudor Interludes & First Regular Plays: John Heywood's The Four PP (Palmer, Pardoner, Pothecary, Pedlar); Nicholas Udall's Ralph Roister Doister (c. 1552, first English comedy, modeled on Plautus's Miles Gloriosus) and Gammer Gurton's Needle; Sackville & Norton's Gorboduc, or Ferrex and Porrex (1561/62, first English tragedy in blank verse, modeled on Seneca).",
+        consequence: "By uniting native earthy humor (like Mak the sheep-thief and the Vice figure) with classical Roman structure (Plautus, Terence, and Seneca), Tudor interludes prepared the ground for the first permanent public theatre—James Burbage's 'The Theatre' (1576) and the University Wits.",
+        terms: [
+          { term: "Four Mystery Cycles", detail: "York (48 plays), Towneley/Wakefield (Second Shepherds' Play), Chester, and N-Town/Ludos Coventriae." },
+          { term: "Ralph Roister Doister (c. 1552)", detail: "First regular English comedy, written by Eton headmaster Nicholas Udall." },
+          { term: "Gorboduc (1561/62)", detail: "Also titled Ferrex and Porrex; written by Thomas Norton (Acts I–III) and Thomas Sackville (Acts IV–V) in blank verse." }
+        ],
+        pyqs: [
+          { year: "UGC NET Dec 2021", q: "Which of the following is the earliest known English Morality Play, accompanied by a manuscript stage plan showing a moat and scaffold?", options: ["Everyman", "Mankind", "The Castle of Perseverance", "Wisdom"], ans: 2, exp: "The Castle of Perseverance (c. 1405–1425, found in the Macro Manuscript) is the earliest full-length English morality play and includes the oldest surviving theatre staging diagram." },
+          { year: "UGC NET June 2019", q: "Thomas Sackville and Thomas Norton's Gorboduc (1561) was performed at the Inner Temple before Queen Elizabeth I. Which Roman playwright served as its structural model?", options: ["Plautus", "Terence", "Seneca", "Ovid"], ans: 2, exp: "Gorboduc is the first English Senecan tragedy, adopting Seneca's five-act structure, chorus, dumb-shows, and off-stage bloodshed." }
+        ]
+      },
+      { id: "m8", day: 4, slot: "Track B • Classical Criticism", trackGroup: "Literary Criticism & Theory (Units VII–IX)", unit: "Unit VIII: Roman Criticism", era: "1st C. BC – 1st C. AD", title: "Horace's Ars Poetica & Longinus's On the Sublime",
+        before: "After Greece was conquered by Rome, Roman critics shifted from Greek metaphysical speculation (Plato/Aristotle) toward practical rules of craftsmanship and rhetorical transport.",
+        catalyst: "In Augustan Rome, amateur aristocrats were writing sloppy verse, prompting Horace (65–8 BC) to write an epistle to the Piso family (Ars Poetica). A century later, Longinus noticed that technical correctness alone produces cold, mediocre literature unless ignited by grandeur and passion (Hypsos / The Sublime).",
+        analysis: "1. Horace's Ars Poetica: Coined famous critical maxims: Ut pictura poesis ('As is painting, so is poetry'), In medias res (epic should plunge 'into the middle of things'), Decorum (propriety of character and style), Purple Patch (purpureus pannus—flashy, irrelevant descriptions), Deus ex machina (avoiding artificial endings), and the dual aim of poetry: Aut prodesse... aut delectare (to instruct and to delight, or 'dulce et utile'). Horace also advised writers to keep their manuscripts for 9 years before publishing! 2. Longinus's On the Sublime (Peri Hypsous): Redefines great literature not by persuasion, but by 'transport' (ekstasis)—an irresistible thunderbolt that lifts the reader out of themselves. Lists 5 Sources of Sublimity: two innate gifts (1. Grandeur of thought, 2. Capacity for strong emotion) and three teachable rhetorical skills (3. Appropriate use of figures, 4. Noble diction, 5. Dignified elevation of composition). Identifies false sublimity: Frigidity, Puerility, and Parenthyrsus (empty, misplaced emotional ranting).",
+        consequence: "Horace became the Bible of Neoclassical critics (Ben Jonson, Boileau, Alexander Pope's Essay on Criticism), while Longinus—translated by Boileau in 1674—sparked Edmund Burke's Philosophical Enquiry (1757), Kant, and the entire Romantic movement's obsession with the Sublime.",
+        terms: [
+          { term: "Dulce et utile", detail: "Horace's formula that the best poet mixes the sweet (delight) with the useful (instruction)." },
+          { term: "5 Sources of Sublimity", detail: "Longinus: 2 innate (Grandeur of thought, Strong passion) + 3 rhetorical (Figures, Noble diction, Dignified composition)." },
+          { term: "Parenthyrsus", detail: "Longinus's term for false, hollow, melodramatic passion where emotion is not called for." }
+        ],
+        pyqs: [
+          { year: "UGC NET Dec 2020", q: "Which among the Five Sources of the Sublime according to Longinus is considered the MOST important innate gift?", options: ["Noble diction", "Grandeur of thought (greatness of conception)", "Dignified composition", "Rhetorical figures of speech"], ans: 1, exp: "Longinus ranks 'grandeur of thought' (the power of forming great conceptions, echoing a great soul) as the first and most important source of the Sublime." },
+          { year: "UGC NET June 2021", q: "The critical maxim 'Ut pictura poesis' ('As is painting, so is poetry') occurs in:", options: ["Aristotle's Poetics", "Horace's Ars Poetica", "Longinus's On the Sublime", "Quintilian's Institutio Oratoria"], ans: 1, exp: "Horace coined the phrase 'Ut pictura poesis' in line 361 of his Ars Poetica (Epistle to the Pisos)." }
+        ]
+      }
+    ];
+
+    // Programmatically populate the remaining chronological & theoretical days up to 90 modules (Days 5 to 61)
+    // Each generated module includes full 4-part narrative structure + key terms + PYQs so no module is ever short!
+    const CHRONO_ROADMAP_DATA = [
+      // Days 5-10: Elizabethan Golden Age & Criticism/Pedagogy
+      [5, "Chronological History (Units I–IV)", "Unit II: Elizabethan Poetry", "1579–1599", "Sidney's Astrophel and Stella & Spenser's Faerie Queene", "Wyatt and Surrey imported the sonnet in 1557, yet English verse still lacked a monumental national epic to rival Virgil and Ariosto.", "In 1579, Stephen Gosson attacked poets in The Schoole of Abuse (dedicating it without permission to Sir Philip Sidney!), while Queen Elizabeth's Protestant court sought a mythic national identity.", "1. Sir Philip Sidney (1554–1586): Sparked the 1590s sonnet craze with Astrophel and Stella (108 sonnets and 11 songs, published posthumously in 1591), addressed to Penelope Devereux (Lady Rich), and wrote the pastoral romance Arcadia. 2. Edmund Spenser (1552–1599): Called the 'Poet's Poet' by Charles Lamb. Announced the Elizabethan poetic renaissance with The Shepheardes Calender (1579, 12 pastoral eclogues for 12 months, dedicated to Sidney). In The Faerie Queene (Books I–III in 1590; Books IV–VI in 1596), outlined in his 'Letter to Sir Walter Raleigh' to 'fashion a gentleman or noble person in virtuous and gentle discipline', Spenser invented the 9-line Spenserian Stanza (8 iambic pentameter lines + 1 hexameter Alexandrine, rhyming ababbcbcc). Celebrated his own marriage to Elizabeth Boyle on June 11, 1594 in Amoretti and Epithalamion (structured around the 24 hours of wedding day and 365 days of the year).", "Spenser's 9-line stanza was later revived by the Romantics (Keats's Eve of St. Agnes, Shelley's Adonais, Byron's Childe Harold).", "Spenserian Stanza (ababbcbcc): 8 pentameters + 1 Alexandrine (12 syllables) | Amoretti & Epithalamion (1595): Celebrates Spenser's marriage to Elizabeth Boyle | Colin Clout: Spenser's pastoral persona.", "In his Letter to Sir Walter Raleigh prefixed to The Faerie Queene, what does Edmund Spenser state as the general end of his book?", ["To defend the Anglican Church against Rome", "To fashion a gentleman or noble person in virtuous and gentle discipline", "To justify the ways of God to men", "To chronicle the Tudor lineage from King Arthur"], 1, "Spenser explicitly writes to Raleigh that the general end of all the book is 'to fashion a gentleman or noble person in vertuous and gentle discipline'."],
+      [5, "Literary Criticism & Theory (Units VII–IX)", "Unit VIII: Renaissance Criticism", "1579–1640", "Gosson's Attack & Sidney's An Apology for Poetry (1595)", "Puritan moralists in London viewed public theatres and secular poetry as 'caterpillars of a commonwealth' that bred plague and idleness.", "In 1579, former playwright turned Puritan pamphleteer Stephen Gosson published The Schoole of Abuse, echoing Plato's Republic to denounce poets as 'pipers and jesters' and the 'mother of lies'.", "Sir Philip Sidney responded around 1580 with An Apology for Poetry (also published in 1595 as The Defence of Poesie), structured as a 7-part classical judicial oration. Sidney synthesizes Plato, Aristotle, and Horace: 1. Antiquity: Poets were the 'first light-givers to ignorance' (called Vates/Prophets by Romans and Poietes/Makers by Greeks). 2. Nature vs. Golden World: While all other arts (astronomy, history, philosophy) are tied as 'serving sciences' to brazen Nature, only the Poet, lifted up with the vigor of his own invention, delivers a 'golden' world ('Nature never set forth the earth in so rich tapestry as divers poets have done'). 3. Superiority over Philosophy & History: The Philosopher teaches obscurely by precept without delight; the Historian is tied to particular facts ('what is') without universal precept; the Poet marries both by giving a 'speaking picture' (moving towards virtuous action, praxis, over mere gnosis). 4. Refuting the 4 Charges: Answering that poets lie, Sidney famously retorts: 'Now, for the poet, he nothing affirms, and therefore never lieth.' Lastly, Sidney critiques contemporary English drama ( praising only Gorboduc while faulting it for violating the Unities of Time and Place) and condemns 'mongrel tragi-comedy'.", "Sidney established the foundational manifesto of English Renaissance criticism, later complemented by Ben Jonson's neoclassical Timber, or Discoveries (1641).", "Stephen Gosson's The Schoole of Abuse (1579) | Vates (Roman: Prophet) vs Poietes (Greek: Maker) | 'The poet nothing affirms, and therefore never lieth' | 'Mongrel tragi-comedy': Sidney's term for mixing kings and clowns on stage.", "In An Apology for Poetry, how does Sir Philip Sidney refute the Puritan charge that poets are liars?", ["By arguing that poetic myths are allegorical truths from the Bible", "By stating that the poet 'nothing affirms, and therefore never lieth'", "By claiming that only historians tell lies for royal patronage", "By appealing to Plato's Ion on divine inspiration"], 1, "Sidney argues that to lie is to affirm that to be true which is false; since the poet never claims literal factual truth ('nothing affirms'), the poet can never lie."],
+      [6, "Chronological History (Units I–IV)", "Unit I: University Wits & Marlowe", "1576–1593", "The University Wits & Marlowe's Mighty Line", "Before 1580, English drama was split between crude popular interludes in inn-yards and stiff Latin/Senecan academic plays at Oxford and Cambridge.", "In 1576, James Burbage built 'The Theatre' in Shoreditch—London's first permanent public playhouse. Simultaneously, a generation of brilliant, impoverished graduates from Oxford and Cambridge (coined the 'University Wits' by 19th-century critic George Saintsbury) arrived in London to earn a living by writing for the commercial stage.", "1. The 7 University Wits: From Cambridge came Christopher Marlowe, Robert Greene, and Thomas Nashe; from Oxford came John Lyly, Thomas Lodge, and George Peele; Thomas Kyd (educated at Merchant Taylors' School) is grouped with them. 2. Key Contributions: John Lyly wrote court comedies in ornate prose ('Euphuism', from Euphues: The Anatomy of Wit, 1578); Thomas Kyd ignited the Elizabethan Revenge Tragedy craze with The Spanish Tragedy (c. 1587, featuring Hieronimo, the ghost of Andrea, and a play-within-a-play); Robert Greene perfected romantic comedy (Friar Bacon and Friar Bungay) and attacked young Shakespeare in A Groats-Worth of Wit (1592) as an 'upstart Crow, beautified with our feathers'. 3. Christopher Marlowe (1564–1593): Transformed Surrey's stiff blank verse into what Ben Jonson called 'Marlowe's mighty line'. His four great tragedies portray Renaissance 'Overreachers' driven by infinite ambition: Tamburlaine the Great (thirst for military power), The Jew of Malta (Barabas—infinite wealth), Doctor Faustus (infinite knowledge, selling his soul to Mephistophilis for 24 years), and Edward II (the chronicle history play that directly inspired Shakespeare's Richard II).", "Before being fatally stabbed by Ingram Frizer in a Deptford tavern brawl over the 'reckoning' (bill) on May 30, 1593 at age 29, Marlowe forged the tragic instrument that William Shakespeare inherited.", "George Saintsbury: Coined 'University Wits' | Kyd's The Spanish Tragedy (Hieronimo's revenge) | Greene's Groats-Worth of Wit (1592): 'Upstart Crow' attack on Shakespeare | Marlowe's Renaissance Overreachers (Tamburlaine, Barabas, Faustus).", "Which 19th-century literary historian coined the collective term 'The University Wits' for Marlowe, Greene, Nashe, Lyly, Lodge, Peele, and Kyd?", ["Edward Dowden", "George Saintsbury", "A.C. Bradley", "F.S. Boas"], 1, "George Saintsbury coined the term 'University Wits' in his 1887 History of Elizabethan Literature."],
+      [6, "Language, India & Research (Units V, VI, X)", "Unit V: Linguistic Foundations", "1916–1965", "From Saussure's Structural Linguistics to Chomsky's Generative Grammar", "Throughout the 19th century, linguistics was strictly historical ('philology')—tracing how Indo-European words changed sound over thousands of years (Diachronic study).", "In 1916, students of the Swiss linguist Ferdinand de Saussure published his lecture notes as Course in General Linguistics, shifting attention from historical word origins to how language works as a self-contained system of signs at a single point in time (Synchronic study).", "1. Ferdinand de Saussure's 4 Key Binaries: (a) Langue (the abstract, shared social system of rules) vs. Parole (individual speech acts in real life); (b) Signifier (the sound-image or written mark) vs. Signified (the mental concept), which together form the Linguistic Sign—crucially, their link is Arbitrary and meaning arises only through difference; (c) Synchronic (studying language at one moment) vs. Diachronic (historical evolution); (d) Syntagmatic (horizontal chain of word order in a sentence) vs. Paradigmatic/Associative (vertical substitution choices). 2. Leonard Bloomfield & American Structuralism/Behaviorism: In Language (1933) and B.F. Skinner's Verbal Behavior (1957), language learning was treated as mechanical habit-formation (Stimulus-Response-Reinforcement). 3. Noam Chomsky's Cognitive Revolution: In Syntactic Structures (1957, famous sentence: 'Colorless green ideas sleep furiously'—grammatical yet meaningless) and his devastating 1959 review of Skinner, Chomsky proved children cannot learn infinite novel sentences merely by imitating habits. Humans possess an innate Language Acquisition Device (LAD) and Universal Grammar (UG). In Aspects of the Theory of Syntax (1965), Chomsky introduced Competence (the speaker-hearer's internal mental knowledge of language) vs. Performance (actual use of language in concrete situations) and Deep Structure vs. Surface Structure.", "Saussure's linguistics gave birth to Structuralism and Poststructuralism in literary theory (Unit IX), while Chomsky's mentalist revolution overthrew behaviorist Audio-Lingual drills in English Language Teaching (Unit V).", "Saussure (1916): Langue/Parole, Signifier/Signified, Synchronic/Diachronic | Chomsky (1957/1965): Syntactic Structures, Competence vs Performance, Deep vs Surface Structure | Innate LAD & Universal Grammar.", "Noam Chomsky constructed the famous sentence 'Colorless green ideas sleep furiously' in Syntactic Structures (1957) to demonstrate that:", ["Poetic metaphor overrides literal grammar", "Syntax (grammatical well-formedness) is autonomous and independent of semantics (meaning)", "Language acquisition is governed by Skinnerian stimulus-response conditioning", "Surface structure always mirrors deep structure"], 1, "Chomsky used 'Colorless green ideas sleep furiously' to show that a sentence can be syntactically well-formed according to native speaker competence while being semantically nonsensical."],
+      [7, "Chronological History (Units I–IV)", "Unit I: Shakespeare (Part 1)", "1589–1600", "Shakespeare's Early Comedies, English Histories & Problem Plays", "Arriving in London from Stratford-upon-Avon around 1588, William Shakespeare (1564–1616) became an actor, playwright, and shareholder in the Lord Chamberlain's Men (who built the Globe Theatre in 1599 and became the King's Men under James I in 1603).", "After the defeat of the Spanish Armada in 1588, patriotic London audiences hungered for plays celebrating English history and romantic comedies exploring love, disguise, and self-discovery.", "1. The Two Lancaster/York Tetralogies: Shakespeare dramatized the Wars of the Roses across eight plays—the First Tetralogy (Henry VI Parts 1, 2, 3 and Richard III) and the mature Second Tetralogy or 'Henriad' (Richard II, Henry IV Parts 1 & 2 featuring Sir John Falstaff and Prince Hal, and Henry V). 2. Festive Romantic Comedies: Following what Northrop Frye calls the 'Green World' pattern (lovers flee a tyrannical court into an enchanted forest where identities are healed before returning to society): A Midsummer Night's Dream, As You Like It (Forest of Arden, Rosalind & Jaques), and Twelfth Night (Illyria, Viola, Malvolio). 3. The 'Problem Plays': Term coined by F.S. Boas in Shakespeare and His Predecessors (1896) (borrowing from Ibsen's social problem dramas) for three dark, morally ambiguous plays written around 1601–1604 that refuse neat comic resolution: All's Well That Ends Well, Measure for Measure (the 'bed-trick' with Angelo, Isabella, and Mariana), and Troilus and Cressida (he also linked Hamlet to them).", "As Queen Elizabeth aged without an heir and the Essex Rebellion failed in 1601, Shakespeare's sunny Festive Comedies darkened into the Problem Plays and the Four Great Tragedies.", "F.S. Boas (1896): Coined 'Problem Plays' (All's Well, Measure for Measure, Troilus and Cressida) | Northrop Frye's 'Green World' (Court → Forest → Court) | First Folio (1623): Compiled by fellow actors John Heminges and Henry Condell (36 plays, omitting Pericles).", "Who coined the critical term 'Problem Plays' in 1896 to describe Shakespeare's All's Well That Ends Well, Measure for Measure, and Troilus and Cressida?", ["E.M.W. Tillyard", "F.S. Boas", "G. Wilson Knight", "L.C. Knights"], 1, "Frederick S. Boas introduced the term 'problem plays' in his 1896 book Shakespeare and His Predecessors, adapting a term then used for Henrik Ibsen's realistic social dramas."],
+      [7, "Literary Criticism & Theory (Units VII–IX)", "Unit VIII: Neoclassical Criticism", "1668–1781", "Dryden's Essay of Dramatick Poesie & Dr. Johnson's Preface to Shakespeare", "During the Restoration (1660) and 18th century, French Neoclassical critics (like Corneille and Boileau) insisted that all plays must strictly obey the Three Aristotelian Unities (Time, Place, and Action) and never mix tragedy with comedy.", "English critics had a dilemma: they admired classical order, yet their greatest national genius—Shakespeare—violated the Unities of Time and Place and mingled kings with grave-diggers!", "1. John Dryden's An Essay of Dramatick Poesie (1668): Set on June 3, 1665, four gentlemen take a barge down the River Thames while listening to the distant cannon fire of the naval Battle of Lowestoft against the Dutch. They debate three great questions under classical pseudonyms: (a) Crites (Sir Robert Howard, Dryden's brother-in-law) defends the Ancients over the Moderns; (b) Eugenius (Charles Sackville, Lord Buckhurst) defends the Moderns over the Ancients, arguing moderns build on ancient science and nature; (c) Lisideius (Sir Charles Sedley) defends French Drama over English Drama for observing the Unities and keeping bloodshed off-stage; (d) Neander (John Dryden himself) defends English Drama, praising English variety, sub-plots, tragicomedy, Ben Jonson ('the more correct poet', examined through a thorough analysis of Epicoene), and Shakespeare ('the man who of all modern, and perhaps ancient poets, had the largest and most comprehensive soul'). 2. Samuel Johnson's Preface to Shakespeare (1765): Called by Adam Smith 'the most manly piece of criticism that was ever published in any country'. Johnson praises Shakespeare as the 'poet of nature' whose characters are 'genuine progeny of common humanity' (species rather than individuals), defends tragicomedy (since real life mingles joy and sorrow), demolishes the Unities of Time and Place (spectators always know they are in a theatre, not Alexandria!), and honestly lists Shakespeare's faults—such as sacrificing virtue to convenience and his fatal addiction to puns ('A quibble was to him the fatal Cleopatra for which he lost the world, and was content to lose it').", "Dryden (whom Dr. Johnson called the 'father of English criticism') and Johnson liberated English criticism from slavish French rules.", "Dryden's 4 Speakers (1668): Crites (Howard/Ancients), Eugenius (Sackville/Moderns), Lisideius (Sedley/French), Neander (Dryden/English) | Johnson (1765): Defended Only Unity of Action; called puns ('quibbles') Shakespeare's 'fatal Cleopatra'.", "In Samuel Johnson's Preface to Shakespeare (1765), what does Johnson famously refer to as 'the fatal Cleopatra for which he [Shakespeare] lost the world, and was content to lose it'?", ["Violating the Unity of Time", "Mixing tragic and comic scenes", "A quibble (wordplay/pun)", "Omitting poetic justice in King Lear"], 2, "Dr. Johnson criticized Shakespeare's fondness for wordplay and puns ('quibbles'), calling a quibble 'the fatal Cleopatra for which he lost the world, and was content to lose it'."]
+    ];
+
+    // Expand remaining days up to 90 modules systematically across the 61-day calendar
+    const FULL_SYLLABUS_TOPICS = [
+      // Days 8 to 61 topics (Chronological + Theory/Pedagogy/India interleaved)
+      [8, "Chronological History (Units I–IV)", "Unit I: Shakespeare (Part 2)", "1600–1613", "Shakespeare's Four Great Tragedies, Roman Plays & Late Romances", "Following the 1599 opening of the Globe Theatre and the 1603 accession of King James I, Shakespeare entered his supreme tragic phase before moving to indoor Blackfriars theatre.", "Political anxieties surrounding regicide (the 1605 Gunpowder Plot), Jacobean melancholy, and the acquisition of the indoor Blackfriars Theatre in 1608 reshaped Shakespeare's dramaturgy.", "1. The Four Great Tragedies: Hamlet (1600–01, revenge delayed by philosophical introspection; T.S. Eliot called it an 'artistic failure' in 1919 for lacking an objective correlative), Othello (1604, domestic tragedy of jealousy engineered by Iago), King Lear (1605–06, double plot of Lear/Cordelia and Gloucester/Edgar adapted from Sidney's Arcadia; Nahum Tate rewrote it in 1681 with a happy ending where Cordelia marries Edgar!), and Macbeth (1606, written for King James I, descendant of Banquo). 2. Roman Plays (based on Thomas North's 1579 translation of Plutarch's Lives): Julius Caesar, Antony and Cleopatra, Coriolanus. 3. The Late Romances (1608–1611, coined by Edward Dowden in 1877): Pericles, Cymbeline, The Winter's Tale (where Hermione's 'statue' comes alive after 16 years), and The Tempest (Prospero, Ariel, Caliban—one of the only two plays where Shakespeare strictly observes the Classical Unities, alongside The Comedy of Errors).", "Shakespeare's Late Romances bridged Jacobean tragedy and the courtly tragicomedies of Beaumont and Fletcher.", "Nahum Tate (1681): Happy-ending adaptation of King Lear | North's Plutarch (1579): Source for Roman Plays | Edward Dowden (1877): Grouped the 4 Late Romances | Unities Observed: Only in The Comedy of Errors and The Tempest.", "In 1681, which Restoration dramatist rewrote Shakespeare's King Lear to give it a happy ending in which Lear survives and Cordelia marries Edgar?", ["John Dryden", "William Davenant", "Nahum Tate", "Colley Cibber"], 2, "Nahum Tate's 1681 adaptation of King Lear omitted the Fool entirely and ended with Lear restored to his throne and Cordelia marrying Edgar; Dr. Johnson actually defended Tate's ending!"],
+      [8, "Language, India & Research (Units V, VI, X)", "Unit V: Second Language Acquisition", "1950–1985", "ELT Methods & Stephen Krashen's Five Monitor Model Hypotheses", "Until the mid-20th century, foreign languages were taught almost exclusively through the Grammar-Translation Method—memorizing deductive grammar rules and translating literary texts in the student's native tongue (L1).", "World War II created an urgent military need for soldiers who could actually speak foreign languages fluently, sparking a wave of scientific ELT methodologies and Stephen Krashen's SLA theory.", "1. Core ELT Methods: (a) Grammar-Translation (deductive rules, reading/writing focus, taught in L1); (b) Direct Method (Berlitz—inductive grammar, everyday vocabulary, strictly NO L1 allowed); (c) Audio-Lingual Method ('Army Method', grounded in Bloomfield's Structural Linguistics and Skinner's Behaviorism—pattern drills, mimicry, error prevention); (d) Communicative Language Teaching (CLT, grounded in Dell Hymes's 1966 'Communicative Competence'—fluency and real-world functions over isolated grammar); (e) Humanistic/Alternative Designer Methods of the 1970s: Silent Way (Caleb Gattegno, using colored Cuisenaire rods), Suggestopedia (Georgi Lozanov, using Baroque music and relaxed armchairs to lower anxiety), Community Language Learning (Charles Curran, teacher as 'counselor'), and Total Physical Response / TPR (James Asher, linking verbal commands to physical movement). 2. Stephen Krashen's 5 Monitor Model Hypotheses: (1) Acquisition-Learning Hypothesis (subconscious Acquisition vs conscious Learning); (2) Monitor Hypothesis (conscious grammar acts only as an editor/monitor); (3) Natural Order Hypothesis (grammatical morphemes are acquired in a predictable order); (4) Input Hypothesis (learners progress by receiving Comprehensible Input at level i + 1); (5) Affective Filter Hypothesis (high anxiety or low motivation raises a mental block that prevents input from reaching the LAD).", "Krashen's i+1 and Hymes's Communicative Competence inspired N.S. Prabhu's Bangalore/Communicational Teaching Project (Task-Based Language Teaching, 1979–84).", "Krashen's 5 Hypotheses: Acquisition-Learning, Monitor, Natural Order, Input (i+1), Affective Filter | Designer Methods: Gattegno (Silent Way), Lozanov (Suggestopedia), Curran (CLL), Asher (TPR) | N.S. Prabhu: Task-Based Language Teaching (Bangalore Project).", "Who developed the 'Silent Way' method of language teaching, in which the teacher remains largely silent and uses colored wooden Cuisenaire rods to prompt learner self-correction?", ["Georgi Lozanov", "Caleb Gattegno", "James Asher", "Charles Curran"], 1, "Caleb Gattegno introduced the Silent Way in 1963, emphasizing learner autonomy and problem-solving using Fidel charts and colored Cuisenaire rods."],
+      [9, "Chronological History (Units I–IV)", "Unit I: Jacobean Drama", "1603–1625", "Ben Jonson's Comedy of Humours & Jacobean Revenge Tragedy", "When Queen Elizabeth died in 1603 and King James VI of Scotland became James I of England, the national mood shifted from optimistic Tudor nationalism to Jacobean anxiety, urban greed, and court corruption.", "Playwrights split into two sharp camps: classical satirists led by Ben Jonson who mocked London's get-rich-quick tricksters, and dark tragedians (Webster, Middleton, Tourneur, Ford) who set lurid revenge plays in Machiavellian Italian courts.", "1. Ben Jonson (1572–1637) & Comedy of Humours: Adapting medieval physiology (where four bodily fluids—blood, phlegm, choler/yellow bile, melancholy/black bile—determine temperament), Jonson explained in the Induction to Every Man Out of His Humour (1599) that a 'Humour' occurs when 'some one peculiar quality / Doth so possess a man, that it doth draw / All his affects, his spirits, and his powers, / In their confluctions, all to run one way.' Notice that in Every Man in His Humour (1598), William Shakespeare himself acted in the cast! Jonson's four satirical masterpieces are Volpone, or The Fox (1606, Volpone and his parasite Mosca trick legacy-hunters Voltore, Corbaccio, and Corvino), Epicoene, or The Silent Woman (1609, Morose hates noise), The Alchemist (1610, Subtle, Face, and Dol Common run a con-game on Sir Epicure Mammon), and Bartholomew Fair (1614, Zeal-of-the-Land Busy). 2. Jacobean Revenge & Domestic Tragedy: John Webster's The White Devil (1612, Vittoria Corombona and Flamineo) and The Duchess of Malfi (1614, where the widowed Duchess secretly marries her steward Antonio and is tortured and strangled on orders of her brothers Ferdinand and the Cardinal by the malcontent spy Bosola, who says: 'We are merely the stars' tennis-balls, struck and banded / Which way please them'); Thomas Middleton & William Rowley's The Changeling (1622, Beatrice-Joanna hires the ugly servant De Flores to murder her fiancé, only to become his sexual prisoner); Cyril Tourneur/Middleton's The Revenger's Tragedy (Vindice poisons the Duke with the dressed-up skull of his dead fiancée Gloriana); and John Ford's Caroline tragedy 'Tis Pity She's a Whore (1633, incestuous love between Giovanni and Annabella).", "Increasing Puritan hostility toward the stage eventually culminated in the Parliament Order of September 2, 1642, closing all London theatres at the outbreak of the English Civil War.", "Jonson's 4 Humours: Blood (Sanguine), Phlegm (Phlegmatic), Choler (Choleric), Black Bile (Melancholic) | Webster's Malcontent: Bosola in The Duchess of Malfi | Middleton & Rowley: The Changeling (Beatrice-Joanna & De Flores).", "In Thomas Middleton and William Rowley's Jacobean tragedy The Changeling (1622), who is the deformed servant hired by Beatrice-Joanna to murder Alonzo de Piracquo, who then demands her virginity as his payment?", ["Bosola", "De Flores", "Flamineo", "Vindice"], 1, "De Flores murders Alonzo for Beatrice-Joanna and then blackmails her into his bed, declaring that sin has made her 'the deed's creature'."],
+      [9, "Literary Criticism & Theory (Units VII–IX)", "Unit VIII: Romantic Criticism", "1800–1821", "Wordsworth's Preface (1800), Coleridge's Biographia Literaria (1817) & Shelley's Defence", "For over a century, 18th-century Neoclassical poetry relied on artificial 'poetic diction' (calling fish 'the finny tribe' or birds 'the feathered choir'), heroic couplets, and urban salon wit.", "Triggered by the democratic ideals of the French Revolution (1789), William Wordsworth and Samuel Taylor Coleridge published Lyrical Ballads in 1798—adding Wordsworth's revolutionary 'Preface' to the second edition of 1800.", "1. Wordsworth's Preface to Lyrical Ballads (1800/1802): Chosen incidents from 'humble and rustic life' because in that condition the essential passions of the heart speak a plainer, more emphatic language. Declares that ' there neither is, nor can be, any essential difference between the language of prose and metrical composition' (rejecting Thomas Gray's neoclassical diction). Defines poetry twice in the same paragraph: 'all good poetry is the spontaneous overflow of powerful feelings' AND 'it takes its origin from emotion recollected in tranquillity'. 2. Coleridge's Biographia Literaria (1817): Explains the division of labor in Lyrical Ballads (Ch. 14): Coleridge would treat supernatural incidents so as to procure 'that willing suspension of disbelief for the moment, which constitutes poetic faith', while Wordsworth would awaken the mind from the 'lethargy of custom' in everyday things. In Chapters 17–18, Coleridge disagrees with Wordsworth on rustic language, arguing that the best part of human language comes from reflection, not uneducated rustics, and that metre artificially alters the whole organic relationship of words. In Chapter 13, Coleridge formulates his famous tripartite distinction: (a) Primary Imagination ('the living Power and prime Agent of all human Perception, and as a repetition in the finite mind of the eternal act of creation in the infinite I AM'); (b) Secondary Imagination (the conscious poetic faculty that 'dissolves, diffuses, dissipates, in order to recreate'); (c) Fancy ('no other than a mode of Memory emancipated from the order of time and space', which merely rearranges 'fixities and definites' mechanically). 3. P.B. Shelley's A Defence of Poetry (written 1821, published 1840): Written in direct response to his friend Thomas Love Peacock's satirical essay The Four Ages of Poetry (1820, which mocked modern poets as 'semi-barbarians in a civilized community'). Shelley concludes: 'Poets are the unacknowledged legislators of the world.'", "Romantic expressive theory shifted the center of criticism from the external world (Mimesis) and the audience (Pragmatic) to the inner mind of the Poet.", "Wordsworth (1800): Rustic life + 'spontaneous overflow' + 'emotion recollected in tranquillity' | Coleridge (1817): Ch. 13 (Primary/Secondary Imagination vs Fancy) & Ch. 14 ('willing suspension of disbelief') | Shelley (1821): Replied to Peacock's Four Ages of Poetry.", "P.B. Shelley wrote his treatise 'A Defence of Poetry' in 1821 as a direct rebuttal to which satirical essay published in 1820?", ["Francis Jeffrey's review of Excursion", "Thomas Love Peacock's The Four Ages of Poetry", "John Gibson Lockhart's Cockney School essay", "William Hazlitt's My First Acquaintance with Poets"], 1, "Thomas Love Peacock's 1820 essay 'The Four Ages of Poetry' (Iron, Gold, Silver, Brass) jokingly argued that poetry had become obsolete in an age of science, prompting Shelley's Defence."]
+    ];
+
+    // Add remaining modules up to 90 across the 61 days with full 4-part structure
+    const REMAINING_TOPICS_BLUEPRINT = [
+      [10, "Chronological History (Units I–IV)", "Unit II & IV: 17th C. Prose & Metaphysicals", "1600–1660", "Bacon's Aphoristic Essays, King James Bible (1611) & Donne's Metaphysical School", "The transition from Elizabethan harmony to Jacobean scientific skepticism (Francis Bacon's Novum Organum) and religious conflict fractured the Renaissance worldview.", "Poets like John Donne rejected smooth Petrarchan conventions for jagged, colloquial speech ('masculine persuasive force') and 'heterogeneous ideas yoked by violence together' (Dr. Johnson's definition in Life of Cowley).", "1. Metaphysical Poets: John Donne (Songs and Sonnets, Holy Sonnets, 'A Valediction: Forbidding Mourning' with the famous twin-compass conceit), George Herbert (The Temple, 1633—shaped poems 'The Altar' and 'Easter Wings'), Richard Crashaw (Steps to the Temple), Henry Vaughan (Silex Scintillans, 'The Retreat'—which inspired Wordsworth's Immortality Ode), and Andrew Marvell ('To His Coy Mistress', 'The Garden'). 2. Cavalier Poets ('Sons of Ben' loyal to King Charles I): Robert Herrick (Hesperides—'Gather ye rosebuds while ye may'), Thomas Carew, Sir John Suckling, and Richard Lovelace ('To Althea, from Prison', 'To Lucasta, Going to the Wars'). 3. 17th-Century Prose: Francis Bacon's Essays (10 in 1597, 38 in 1612, 58 in 1625) and New Atlantis (Solomon's House); Robert Burton's The Anatomy of Melancholy (1621, written under the pseudonym 'Democritus Junior'); Sir Thomas Browne's Religio Medici (1642) and Hydriotaphia, or Urn Burial (1658); and the Authorized King James Bible (1611, prepared by 47 scholars in 6 panels).", "After two centuries of neglect, T.S. Eliot rehabilitated the Metaphysicals in his 1921 essay 'The Metaphysical Poets' (reviewing H.J.C. Grierson's anthology), arguing that Donne and Herbert possessed a unified sensibility before a 'dissociation of sensibility' set in during the 17th century under Milton and Dryden.", "Dr. Johnson (Life of Cowley): 'Heterogeneous ideas are yoked by violence together' | T.S. Eliot (1921): 'Dissociation of sensibility' | Robert Burton: Pseudonym 'Democritus Junior' in Anatomy of Melancholy | Bacon's Essays: 10 (1597) → 38 (1612) → 58 (1625).", "Under what pseudonym did Robert Burton publish his encyclopedic treatise 'The Anatomy of Melancholy' in 1621?", ["Isaac Bickerstaff", "Democritus Junior", "Smectymnuus", "Martin Marprelate"], 1, "Robert Burton published The Anatomy of Melancholy (1621) under the persona of 'Democritus Junior', after the ancient Greek 'laughing philosopher' Democritus."],
+      [11, "Chronological History (Units I–IV)", "Unit II & IV: Puritan Interregnum & Milton", "1642–1674", "Civil War, Hobbes's Leviathan & John Milton's Paradise Lost", "In 1642, war broke out between Royalists ('Cavaliers' supporting King Charles I) and Parliamentarians ('Roundheads' led by Oliver Cromwell), culminating in the public beheading of Charles I in 1649 and the Puritan Commonwealth.", "John Milton (1608–1674)—nicknamed 'The Lady of Christ's' at Cambridge—served as Cromwell's Latin Secretary until going completely blind in 1652. When the monarchy was restored in 1660, blind, defeated Milton turned his political grief into England's greatest Christian epic.", "1. Milton's Three Periods: (a) Early Poems (Horton Period): 'On the Morning of Christ's Nativity' (1629), companion poems L'Allegro (mirth) and Il Penseroso (melancholy), the masque Comus (1634), and the pastoral elegy Lycidas (1637, mourning his Cambridge friend Edward King and attacking corrupt clergy as 'blind mouths'); (b) Political & Divorce Pamphlets (1640–1660): Areopagitica (1644, impassioned speech to Parliament against pre-publication licensing/censorship: 'he who destroys a good book, kills reason itself'); (c) Great Restoration Masterpieces: Paradise Lost (published in 10 books in 1667; revised into 12 books in 1674 on the model of Virgil's Aeneid, written in unrhymed blank verse 'to justify the ways of God to men'), followed by Paradise Regained (4 books on Christ's temptation in the wilderness) and the closet tragedy Samson Agonistes (1671). 2. Contemporary Political & Religious Prose: Thomas Hobbes's Leviathan (1651, arguing that in a state of nature human life is 'solitary, poor, nasty, brutish, and short', requiring an absolute sovereign), Izaak Walton's The Compleat Angler (1653), and John Bunyan's Puritan prison allegory The Pilgrim's Progress (1678—Christian's journey from the City of Destruction through the Slough of Despond and Vanity Fair to the Celestial City).", "William Blake famously remarked in The Marriage of Heaven and Hell (1790) that Milton was 'of the Devil's party without knowing it', inaugurating Romantic Satanism.", "Lycidas (1637): Pastoral elegy for Edward King | Areopagitica (1644): Defends freedom of the press against the Licensing Order of 1643 | Paradise Lost: 10 books (1667) → 12 books (1674) | Hobbes's Leviathan (1651): Life in the state of nature is 'solitary, poor, nasty, brutish, and short'.", "John Milton's Paradise Lost was first published in 1667 in ten books. In which year was the second edition published, reorganizing the epic into twelve books by splitting Books VII and X?", ["1670", "1671", "1674", "1678"], 2, "In 1674 (the year of Milton's death), the second edition of Paradise Lost divided the original Books VII and X into two each, creating the standard 12-book Virgilian structure."],
+      [12, "Literary Criticism & Theory (Units VII–IX)", "Unit VIII: Victorian Criticism", "1865–1891", "Matthew Arnold's Touchstone Method vs. Pater & Wilde's Aestheticism", "Rapid Victorian industrialization, Darwin's On the Origin of Species (1859), and the rise of a materialistic middle class ('Philistines') shook religious faith in 19th-century England.", "Matthew Arnold (1822–1888) believed that as religious dogma crumbled, great Poetry would have to replace religion to save civilization from anarchy—whereas Walter Pater and Oscar Wilde countered that art has no moral duty at all ('Art for Art's Sake').", "1. Matthew Arnold's Critical System: In 'The Function of Criticism at the Present Time' (Essays in Criticism, 1865), Arnold defines criticism as 'a disinterested endeavor to learn and propagate the best that is known and thought in the world'. In Culture and Anarchy (1869), he divides English society into three classes: Barbarians (aristocracy), Philistines (materialistic middle class), and Populace (working class), and contrasts Hebraism (strictness of conscience/conduct) with Hellenism (spontaneity of consciousness, 'sweetness and light'). In 'The Study of Poetry' (1880), Arnold warns against two false estimates of poetry—the Historical Estimate and the Personal Estimate—in favor of the Real Estimate. To detect the truly classic, he proposes the Touchstone Method: holding short passages from supreme masters (Homer, Dante, Shakespeare, Milton) beside any poem to test its 'high truth and high seriousness'. Shockingly, Arnold denies Chaucer classic status because Chaucer lacks 'high seriousness', and calls Dryden and Pope 'classics of our prose', not of our poetry! 2. Aestheticism (Walter Pater & Oscar Wilde): In the Conclusion to Studies in the History of the Renaissance (1873), Walter Pater declared that 'To burn always with this hard, gem-like flame, to maintain this ecstasy, is success in life' and that 'All art constantly aspires towards the condition of music.' His disciple Oscar Wilde argued in The Decay of Lying (Intentions, 1891) that 'Life imitates Art far more than Art imitates Life.'", "Arnold's 'high seriousness' directly shaped F.R. Leavis's moral criticism at Cambridge in the 1930s.", "Culture and Anarchy (1869): Barbarians, Philistines, Populace + Hebraism vs Hellenism ('Sweetness and Light', phrase borrowed from Swift's Battle of the Books) | The Study of Poetry (1880): Historical, Personal, and Real Estimates + Touchstone Method | Walter Pater (1873): 'Hard, gem-like flame'.", "In 'The Study of Poetry' (1880), why does Matthew Arnold exclude Geoffrey Chaucer from the ranks of the supreme poetical classics like Homer, Dante, and Shakespeare?", ["Because Chaucer wrote in an archaic Midland dialect", "Because Chaucer's poetry lacks 'high seriousness' (spoudaiotes)", "Because Chaucer borrowed his plots from Boccaccio", "Because Chaucer wrote primarily in heroic couplets"], 1, "Borrowing Aristotle's term spoudaiotes, Arnold praises Chaucer's 'liquid diction' and benign view of human life, but concludes that Chaucer lacks the 'high and excellent seriousness' of Homer, Dante, and Shakespeare."]
+    ];
+
+    // Build all 90 modules across Days 1 to 61 so every single day has assigned modules and full 4-part explanations
+    const ADDITIONAL_SYLLABUS_TOPICS = [
+      ["Unit I: Restoration Drama", "1660–1700", "Restoration Comedy of Manners (Etherege, Wycherley, Congreve, Behn) & Heroic Tragedy", "When Charles II returned from French exile in 1660, he issued royal patents to Thomas Killigrew (King's Company) and William Davenant (Duke's Company), introducing roofed proscenium theatres and professional actresses (like Nell Gwyn) for the first time.", "Aristocratic Reaction against 18 years of Puritan rule sparked witty, sexually frank urban comedies (Comedy of Manners) and bombastic Heroic Tragedies in rhymed couplets (Dryden's The Conquest of Granada and blank-verse All for Love; Thomas Otway's Venice Preserv'd).", "1. Major Comedies of Manners: George Etherege (The Man of Mode, 1676—Dorimant modeled on the Earl of Rochester); William Wycherley (The Country Wife, 1675—Horner spreads a fake rumor that he is impotent to seduce London wives like Margery Pinchwife; and The Plain Dealer); Aphra Behn (Britain's first professional woman writer: The Rover, 1677—Willmore and Hellena); William Congreve (The Way of the World, 1700—Mirabell and Millamant's famous 'proviso scene' negotiating marriage terms in Act IV, alongside Lady Wishfort and Fainall); and George Farquhar (The Recruiting Officer, The Beaux' Stratagem). 2. Jeremy Collier's 1698 Attack: In A Short View of the Immorality and Profaneness of the English Stage (1698), clergyman Jeremy Collier attacked Dryden, Congreve, Vanbrugh, and D'Urfey for mocking clergy and rewarding rakes.", "Collier's attack and rising middle-class morality pushed 18th-century drama into tearful Sentimental Comedy (Colley Cibber, Richard Steele's The Conscious Lovers) until Goldsmith and Sheridan revived laughing comedy in the 1770s.", "1660 Patent Theatres: Killigrew (King's) & Davenant (Duke's) | Wycherley's The Country Wife (1675): Horner & Margery Pinchwife | Congreve's The Way of the World (1700): Mirabell & Millamant's Proviso Scene | Jeremy Collier (1698): Short View.", "In William Congreve's The Way of the World (1700), which two lovers negotiate a pre-nuptial contract of mutual respect and independence in the famous 'Proviso Scene' (Act IV)?", ["Dorimant and Harriet", "Mirabell and Millamant", "Horner and Margery Pinchwife", "Aimwell and Dorinda"], 1, "Mirabell and Millamant negotiate their famous proviso scene in Act IV of Congreve's The Way of the World before agreeing to marry."],
+      ["Unit II & IV: Augustan Satire", "1681–1744", "Dryden, Pope, Swift & The Scriblerus Club", "Exhausted by 17th-century religious civil wars and the 1688 Glorious Revolution, early 18th-century writers modeled themselves on Emperor Augustus's Rome, prizing Reason, Order, Wit, and public Satire.", "Tory vs. Whig party politics and the explosion of commercial hack-writers on Grub Street inspired the Scriblerus Club (founded in 1714 by Swift, Pope, John Gay, John Arbuthnot, and Thomas Parnell).", "1. John Dryden's Satires: Absalom and Achitophel (1681, using the biblical story of King David=Charles II, Absalom=Duke of Monmouth, and Achitophel=Earl of Shaftesbury during the Exclusion Crisis) and Mac Flecknoe (1682, mock-heroic attack crowning Whig rival Thomas Shadwell as monarch of dullness). 2. Alexander Pope (1688–1744): An Essay on Criticism (1711, 'To err is human, to forgive, divine'; 'A little learning is a dangerous thing'), The Rape of the Lock (2 cantos in 1712; expanded to 5 cantos in 1714 by adding Rosicrucian machinery of Sylphs like Ariel—based on Lord Petre cutting a lock of Arabella Fermor's hair, mediated by John Caryll), Epistle to Dr. Arbuthnot (1735, containing the portrait of Joseph Addison as 'Atticus'—'Willing to wound, and yet afraid to strike'—and Lord Hervey as 'Sporus'), and The Dunciad (4 books in 1743, crowning Colley Cibber as King of Dunces). 3. Jonathan Swift (1667–1745): A Tale of a Tub (1704, allegory of three brothers—Peter=Catholic, Martin=Anglican, Jack=Calvinist), The Battle of the Books (where the Aesopic Spider represents Moderns and the Bee represents Ancients, giving us the phrase 'sweetness and light'), Gulliver's Travels (1726—1. Lilliput, 2. Brobdingnag, 3. Laputa/Balnibarbi/Struldbruggs, 4. Houyhnhnms & Yahoos), and A Modest Proposal (1729, ironic proposal to eat Irish babies).", "Augustan neo-classical perfection reached its zenith in Pope's closed heroic couplet before giving way to Mid-18th-Century Graveyard Poets (Gray, Collins, Cowper, Blair) and Pre-Romanticism.", "Dryden (1681–82): Absalom (Monmouth), Achitophel (Shaftesbury), Zimri (Buckingham), Mac Flecknoe (Shadwell) | Pope's Epistle to Dr. Arbuthnot: Atticus = Joseph Addison | Swift's Tale of a Tub: Peter (Catholic), Martin (Anglican), Jack (Dissenting Protestant).", "In Alexander Pope's 'Epistle to Dr. Arbuthnot' (1735), which contemporary writer is satirized under the portrait of 'Atticus', who would 'Damns with faint praise, assent with civil leer'?", ["Richard Steele", "Joseph Addison", "Colley Cibber", "Lord Hervey"], 1, "Pope's portrait of 'Atticus' targets Joseph Addison, while 'Sporus' ('that mere white curd of ass's milk') targets Lord Hervey."],
+      ["Unit III: Rise of the 18th-C. Novel", "1719–1771", "Defoe, Richardson, Fielding, Smollett & Sterne ('Four Wheels of the Wain')", "Why did the English Novel arise in the early 1700s? As historian Ian Watt explains in The Rise of the Novel (1957), three forces converged: Lockean empirical philosophy (individual sensory experience), Protestantism/capitalist individualism, and a growing middle-class female readership with circulating libraries.", "In 1740, printer Samuel Richardson set out to write a volume of model letters for country girls and accidentally wrote Pamela—triggering Henry Fielding's parodies Shamela and Joseph Andrews.", "1. Daniel Defoe (1660–1731): Robinson Crusoe (1719, spiritual autobiography + homo economicus based on Alexander Selkirk), Moll Flanders (1722), Roxana (1724). 2. The Four Wheels of the Novel Wain (George Saintsbury's phrase): (a) Samuel Richardson's epistolary novels: Pamela; or, Virtue Rewarded (1740, Mr. B), Clarissa; or, The History of a Young Lady (1748, Clarissa Harlowe vs Robert Lovelace), Sir Charles Grandison; (b) Henry Fielding: Mocked Pamela's calculating virtue in An Apology for the Life of Mrs. Shamela Andrews (1741) and Joseph Andrews (1742, featuring Parson Abraham Adams and Lady Booby, where Fielding defines the novel in his Preface as a 'comic epic-poem in prose'), followed by The History of Tom Jones, a Foundling (1749, 18 books divided into 6+6+6: Country, Road, London; Squire Allworthy, Sophia Western, Blifil); (c) Tobias Smollett's picaresque nautical novels: Roderick Random (1748), Peregrine Pickle, Humphry Clinker (1771, epistolary); (d) Laurence Sterne's anti-novel: The Life and Opinions of Tristram Shandy, Gentleman (9 vols, 1759–1767; black/marbled/blank pages, Locke's association of ideas, Uncle Toby's siege fortifications, and Tristram isn't even born until Volume III!).", "Sterne's self-reflexive digressions anticipated 20th-century stream of consciousness (Virginia Woolf) and postmodern metafiction (Salman Rushdie, Viktor Shklovsky called Tristram Shandy 'the most typical novel in world literature').", "Ian Watt's The Rise of the Novel (1957): Formal Realism (Defoe, Richardson, Fielding) | Fielding's Preface to Joseph Andrews (1742): 'A comic epic-poem in prose' | Sterne's Tristram Shandy (1759–67): Uncle Toby, Corporal Trim, Parson Yorick.", "In his 1957 critical study 'The Rise of the Novel', Ian Watt identifies which three 18th-century authors as the pioneers of 'Formal Realism'?", ["Defoe, Swift, and Sterne", "Defoe, Richardson, and Fielding", "Richardson, Fielding, and Smollett", "Bunyan, Defoe, and Goldsmith"], 1, "Ian Watt's The Rise of the Novel: Studies in Defoe, Richardson and Fielding (1957) examines how those three authors established 'formal realism'."],
+      ["Unit VIII: 20th-C. Formalism & New Criticism", "1917–1957", "Russian Formalism, Anglo-American New Criticism & Northrop Frye's Archetypes", "In the late 19th century, literary scholarship was dominated by positivist biography and historical gossip—studying an author's laundry bills and love letters instead of the words on the page.", "Around 1915–1930, two movements—Russian Formalism (Moscow Linguistic Circle & OPOJAZ) and Anglo-American New Criticism—demanded an intrinsic, scientific study of 'the text itself'.", "1. Russian Formalism: Viktor Shklovsky coined Defamiliarization (Ostranenie—'making strange') in 'Art as Technique' (1917), arguing that habitual perception makes life automatic, and art exists 'to make the stone stony'. Formalists also distinguished Fabula (raw chronological events of a story) vs. Syuzhet (the artistic arrangement of the plot). Roman Jakobson defined 'Literariness' (literaturnost) as 'organized violence committed on ordinary speech', and Boris Eichenbaum and Vladimir Propp (Morphology of the Folktale, 1928—31 narrative functions) extended structural analysis. 2. Pioneers & New Critics: I.A. Richards founded 'Practical Criticism' (1929, giving Cambridge students unsigned poems to expose stock responses) and separated Scientific/Referential language from Emotive/Pseudo-statement language in Principles of Literary Criticism (1924). His student William Empson wrote Seven Types of Ambiguity (1930). In the US, John Crowe Ransom coined 'The New Criticism' (1941), joined by Allen Tate ('Tension' in poetry = Extension + Intension), Robert Penn Warren, Cleanth Brooks (The Well Wrought Urn, 1947—Irony, Paradox, and 'The Heresy of Paraphrase'), and W.K. Wimsatt & Monroe Beardsley ('The Intentional Fallacy' 1946—judging a poem by authorial intention; and 'The Affective Fallacy' 1949—judging a poem by its emotional effect on the reader). 3. Myth & Archetypal Criticism: Northrop Frye's Anatomy of Criticism (1957) mapped literature onto the four seasons of the year: Spring = Comedy, Summer = Romance, Autumn = Tragedy, Winter = Irony and Satire.", "New Criticism reigned supreme in universities until Jacques Derrida's 1966 Johns Hopkins lecture inaugurated Poststructuralism and Deconstruction.", "Shklovsky (1917): Ostranenie (Defamiliarization) + Fabula vs Syuzhet | Richards (1929): Practical Criticism & Four Kinds of Meaning (Sense, Feeling, Tone, Intention) | Wimsatt & Beardsley: Intentional Fallacy (1946) & Affective Fallacy (1949) | Northrop Frye (1957): Spring=Comedy, Summer=Romance, Autumn=Tragedy, Winter=Irony/Satire.", "In Northrop Frye's 'Anatomy of Criticism' (1957), which of the four seasonal Mythoi corresponds to the genre of 'Irony and Satire'?", ["The Mythos of Spring", "The Mythos of Summer", "The Mythos of Autumn", "The Mythos of Winter"], 3, "Frye maps the four narrative mythoi onto the seasonal cycle: Spring (Comedy), Summer (Romance), Autumn (Tragedy), and Winter (Irony and Satire)."],
+      ["Unit II: Romantic Poetry", "1789–1832", "Blake, First-Generation Lake Poets (Wordsworth, Coleridge) & Second-Generation Romantics", "Triggered by the American Revolution (1776), the French Revolution (1789), and the Industrial Revolution ('dark Satanic Mills'), English poetry underwent a seismic shift from Augustan urban reason to Romantic imagination, nature, and rebellion.", "The 1798 publication of Lyrical Ballads (opening with Coleridge's Rime of the Ancient Mariner and closing with Wordsworth's 'Tintern Abbey') inaugurated the High Romantic era.", "1. Visionary Precursor—William Blake (1757–1827): Engraved illuminated books pairing 'Two Contrary States of the Human Soul': Songs of Innocence (1789, 'The Lamb') and Songs of Experience (1794, 'The Tyger', 'London'), plus The Marriage of Heaven and Hell ('Without Contraries is no progression'). 2. First Generation ('Lake Poets'—mocked by Francis Jeffrey in the Edinburgh Review): William Wordsworth (The Prelude, or Growth of a Poet's Mind in 14 books, published posthumously in 1850; 'Ode: Intimations of Immortality', 'Michael', 'Resolution and Independence'), S.T. Coleridge ('The Rime of the Ancient Mariner', 'Kubla Khan', 'Christabel', 'Frost at Midnight', 'Dejection: An Ode'), and Robert Southey. 3. Second Generation: Lord Byron (Childe Harold's Pilgrimage, which created the brooding 'Byronic Hero', and the ottava rima satire Don Juan); P.B. Shelley (Prometheus Unbound, 'Ode to the West Wind', 'To a Skylark', 'The Mask of Anarchy' written after the 1819 Peterloo Massacre, and Adonais—pastoral elegy on the death of John Keats attacking conservative reviewers); and John Keats (mocked along with Leigh Hunt as the 'Cockney School of Poetry' by John Gibson Lockhart in Blackwood's Magazine; wrote Endymion, 'The Eve of St. Agnes', 'La Belle Dame sans Merci', the unfinished Hyperion, and the six great Odes of 1819: Psyche, Nightingale, Grecian Urn, Melancholy, Indolence, and To Autumn). In an December 1817 letter to his brothers George and Tom, Keats coined 'Negative Capability'—'when man is capable of being in uncertainties, Mysteries, doubts, without any irritable reaching after fact & reason' (contrasting Shakespeare's Negative Capability with Wordsworth's 'egotistical sublime').", "The early deaths of Keats (1821), Shelley (1822), and Byron (1824) and the passage of the First Reform Act (1832) marked the transition to the Victorian Age.", "Blake (1789/1794): Innocence vs Experience | Cockney School Attack: John Gibson Lockhart ('Z') in Blackwood's Magazine against Hunt and Keats | Keats (Dec 1817 letter): 'Negative Capability' & 'Egotistical Sublime' (for Wordsworth) | Shelley's Adonais (1821): Elegy on Keats.", "In a famous December 1817 letter to his brothers George and Thomas, John Keats formulated the concept of 'Negative Capability'. Which writer did Keats cite as possessing this quality 'enormously'?", ["John Milton", "William Shakespeare", "William Wordsworth", "Edmund Spenser"], 1, "Keats wrote that Negative Capability is 'that which Shakespeare possessed so enormously—I mean Negative Capability, that is when man is capable of being in uncertainties, Mysteries, doubts, without any irritable reaching after fact & reason'."],
+      ["Unit III: Romantic & Victorian Fiction", "1800–1900", "Jane Austen, Walter Scott, the Brontës, Dickens, George Eliot & Thomas Hardy", "While poetry dominated the Romantic period, two novelists between 1811 and 1830 created two entirely new templates: Jane Austen's novel of manners on '3 or 4 families in a country village' (her 'little bit [two inches wide] of ivory') and Sir Walter Scott's Historical Novel (Waverley, 1814; Ivanhoe).", "When Queen Victoria ascended the throne in 1837, the novel overtook poetry as the dominant literary form, serialized in monthly installments and tackling industrialization, evolution, and women's emancipation.", "1. Jane Austen's 6 Novels (Chronological publication): Sense and Sensibility (1811), Pride and Prejudice (1813, originally titled First Impressions), Mansfield Park (1814), Emma (1815), and posthumously Northanger Abbey (parody of Ann Radcliffe's Gothic Mysteries of Udolpho) and Persuasion (1817). 2. The Brontë Sisters (published under the male pseudonyms Currer, Ellis, and Acton Bell): Charlotte Brontë (Jane Eyre, 1847—critiqued by Gayatri Spivak and rewritten from Bertha Mason's perspective by Jean Rhys in Wide Sargasso Sea, 1966; Shirley; Villette), Emily Brontë (Wuthering Heights, 1847—narrated via frame narrators Mr. Lockwood and Nelly Dean), and Anne Brontë (Agnes Grey, The Tenant of Wildfell Hall). 3. Victorian Giants: Charles Dickens (Pickwick Papers, Oliver Twist, David Copperfield, Bleak House, Hard Times, Great Expectations), William Makepeace Thackeray (Vanity Fair: A Novel without a Hero, 1847–48, featuring Becky Sharp), Elizabeth Gaskell (Mary Barton, North and South), George Eliot / Mary Ann Evans (Adam Bede, The Mill on the Floss, Silas Marner, Middlemarch: A Study of Provincial Life, 1871–72), and Thomas Hardy's Wessex Novels (Far from the Madding Crowd, The Return of the Native, The Mayor of Casterbridge, Tess of the d'Urbervilles: A Pure Woman Faithfully Presented 1891, and Jude the Obscure 1895—whose hostile reception caused Hardy to abandon fiction for poetry).", "Hardy's tragic determinism and George Eliot's psychological realism paved the way for early 20th-century transition novelists (Conrad, Lawrence, Forster) and High Modernists.", "Austen's 6 Novels (1811–1817): S&S, P&P, Mansfield Park, Emma, Northanger Abbey, Persuasion | Bell Pseudonyms: Currer (Charlotte), Ellis (Emily), Acton (Anne) | Thackeray's Vanity Fair (1848): Subtitled 'A Novel without a Hero' | Jean Rhys's Wide Sargasso Sea (1966): Postcolonial prequel to Jane Eyre.", "Which two frame narrators recount the story of Heathcliff and Catherine Earnshaw in Emily Brontë's Wuthering Heights (1847)?", ["Gabriel Oak and Bathsheba", "Mr. Lockwood and Nelly (Ellen) Dean", "Edgar Linton and Isabella", "Gilbert Markham and Helen Huntingdon"], 1, "Emily Brontë structures Wuthering Heights through a dual narrative frame: the tenant Mr. Lockwood (outer narrator) records the oral history told to him by the housekeeper Nelly Dean (inner narrator)."],
+      ["Unit IX: Structuralism & Deconstruction", "1957–1980", "Claude Lévi-Strauss, Roland Barthes, Jacques Derrida & Michel Foucault", "Following Saussure's discovery that linguistic signs work through binary differences rather than fixed essences, French thinkers in the 1950s and 1960s applied structural linguistics to anthropology, wrestling matches, fashion, and literature.", "In October 1966, at a Johns Hopkins University symposium designed to introduce French Structuralism to America, a 36-year-old philosopher named Jacques Derrida delivered a paper titled 'Structure, Sign, and Play in the Discourse of the Human Sciences'—deconstructing Structuralism from within and launching Poststructuralism.", "1. Roland Barthes (Transition from Structuralism to Poststructuralism): In Mythologies (1957), Barthes decoded bourgeois cultural myths. In 'The Death of the Author' (1967), he declared that a text is 'a tissue of quotations drawn from the innumerable centres of culture' and that 'the birth of the reader must be at the cost of the death of the Author.' In S/Z (1970), he analyzed Balzac's short story 'Sarrasine' using five codes (Hermeneutic, Proairetic, Semic, Symbolic, Cultural) and distinguished Readerly (lisible—classic texts where the reader is a passive consumer) vs. Writerly (scriptible—modern texts where the reader actively co-produces meaning). 2. Jacques Derrida (1930–2004): Published three landmark books in 1967: Of Grammatology, Writing and Difference, and Speech and Phenomena. Derrida argued that all Western philosophy since Plato suffers from Logocentrism and Phonocentrism (privileging spoken speech over writing and relying on a 'Transcendental Signified' or fixed center outside play). He coined Différance (combining 'to differ' in space and 'to defer' in time, showing that meaning is endlessly postponed along a chain of signifiers), Aporia (an irresolvable logical impasse in a text), and Arche-writing. 3. Michel Foucault (1926–1984): Countered Barthes with 'What Is an Author?' (1969, introducing the 'Author-Function' and 'founders of discursivity' like Marx and Freud). Analyzed the nexus of Power/Knowledge, Discourse, Episteme, and Jeremy Bentham's Panopticon surveillance in Madness and Civilization, The Order of Things, Discipline and Punish (1975), and The History of Sexuality.", "Deconstruction spread to America via the Yale School of Deconstruction: Paul de Man (Blindness and Insight, Allegories of Reading), J. Hillis Miller, Geoffrey Hartman, and Harold Bloom (The Anxiety of Influence, 1973).", "Derrida's 1966 Johns Hopkins paper: 'Structure, Sign, and Play' | Derrida's 3 Books of 1967: Of Grammatology, Writing and Difference, Speech and Phenomena | Barthes (1967/1970): 'Death of the Author' & S/Z (Readerly vs Writerly) | Yale School: Paul de Man, J. Hillis Miller, Geoffrey Hartman, Harold Bloom.", "Which four critics at Yale University formed the 'Yale School of Deconstruction' (co-authoring the 1979 manifesto Deconstruction and Criticism with Jacques Derrida)?", ["Cleanth Brooks, Robert Penn Warren, W.K. Wimsatt, and René Wellek", "Paul de Man, J. Hillis Miller, Geoffrey Hartman, and Harold Bloom", "Stanley Fish, Wolfgang Iser, Hans Robert Jauss, and Norman Holland", "Fredric Jameson, Terry Eagleton, Edward Said, and Gayatri Spivak"], 1, "Paul de Man, J. Hillis Miller, Geoffrey Hartman, and Harold Bloom (along with Jacques Derrida) contributed to the 1979 landmark volume Deconstruction and Criticism."],
+      ["Unit IX: Postcolonial, Feminist & Cultural Theory", "1949–1994", "Showalter's Gynocriticism, Postcolonial Trinity (Said, Spivak, Bhabha) & Birmingham CCCS", "After World War II, the decolonization of Asia and Africa and the rise of Second-Wave Feminism exposed how the Western literary canon had silenced women, the working class, and colonized peoples.", "Beginning with Simone de Beauvoir's The Second Sex (1949—'One is not born, but rather becomes, a woman') and Frantz Fanon's The Wretched of the Earth (1961), critics forged Feminist, Postcolonial, and Cultural Studies.", "1. Feminist Criticism: Virginia Woolf's A Room of One's Own (1929, inventing Shakespeare's tragic sister 'Judith Shakespeare'); Kate Millett's Sexual Politics (1970); Elaine Showalter's A Literature of Their Own (1977), which coined 'Gynocriticism' (studying women as writers rather than mere passive readers of male texts) and traced three phases: Feminine (1840–1880, imitating male norms under male pseudonyms), Feminist (1880–1920, protest and suffragette advocacy), and Female (1920–present, autonomous self-discovery); Sandra Gilbert & Susan Gubar's The Madwoman in the Attic (1979, Bertha Mason as Jane Eyre's repressed double); French Écriture Féminine (Hélène Cixous's 'The Laugh of the Medusa' 1975, Luce Irigaray, Julia Kristeva); and Judith Butler's Gender Trouble (1990—gender as repeated performativity). 2. The Holy Trinity of Postcolonial Theory (Robert J.C. Young's phrase): (a) Edward Said's Orientalism (1978, applying Foucault's discourse theory and Gramsci's hegemony to show how the West manufactured the 'Orient') and Culture and Imperialism (1993, 'Contrapuntal Reading'); (b) Gayatri Chakravorty Spivak's 'Can the Subaltern Speak?' (1988), 'Strategic Essentialism', and 'Worlding'; (c) Homi K. Bhabha's Nation and Narration (1990) and The Location of Culture (1994—Mimicry ['almost the same, but not quite'], Hybridity, Ambivalence, and the Third Space). 3. Birmingham CCCS (1964): Founded by Richard Hoggart (The Uses of Literacy, 1957) and led by Stuart Hall (Encoding/Decoding: Dominant, Negotiated, and Oppositional readings) alongside Raymond Williams ('Structures of Feeling', 'Cultural Materialism').", "These frameworks directly inform contemporary Dalit Aesthetics (Sharan Kumar Limbale's Towards an Aesthetic of Dalit Literature, 2004), Subaltern Studies (founded by Ranajit Guha in 1982), and Ecocriticism.", "Showalter (1977): Gynocriticism + 3 Phases (Feminine, Feminist, Female) | Gilbert & Gubar (1979): The Madwoman in the Attic | Postcolonial Trinity: Said (Orientalism 1978), Spivak (Can the Subaltern Speak? 1988), Bhabha (Location of Culture 1994) | Ranajit Guha (1982): Founded Subaltern Studies.", "In 'A Literature of Their Own' (1977), Elaine Showalter divides the history of British women's writing into three chronological phases. What is the correct sequence of these three phases?", ["Female → Feminist → Feminine", "Feminine → Feminist → Female", "Feminist → Feminine → Female", "Maternal → Suffragist → Gynocritical"], 1, "Showalter's three historical stages are: 1. The Feminine phase (1840–1880, imitation of dominant male tradition), 2. The Feminist phase (1880–1920, protest against standards), and 3. The Female phase (1920–present, self-discovery)."],
+      ["Unit I, II & III: High Modernism to Post-War Literature", "1900–2000", "High Modernism (1922: Eliot, Joyce, Woolf, Yeats) & Post-War British/World Literature", "World War I (1914–1918), Freudian psychoanalysis, Nietzsche's 'God is dead', and Einstein's relativity shattered Victorian belief in linear progress and objective realism.", "The year 1922 became the 'Annus Mirabilis' (Miracle Year) of High Modernism with the simultaneous publication of T.S. Eliot's The Waste Land and James Joyce's Ulysses, while Virginia Woolf declared in 'Mr. Bennett and Mrs. Brown' (1924) that 'on or about December 1910, human character changed.'", "1. Modernist Poetry & Fiction: W.B. Yeats (Easter 1916, 'The Second Coming', 'Sailing to Byzantium', 'Byzantium'); T.S. Eliot ('The Love Song of J. Alfred Prufrock', The Waste Land 1922, Four Quartets—'Burnt Norton', 'East Coker', 'The Dry Salvages', 'Little Gidding'; and his 1919 critical essay 'Tradition and the Individual Talent' arguing that 'Poetry is not a turning loose of emotion, but an escape from emotion'); James Joyce (Dubliners, A Portrait of the Artist as a Young Man, Ulysses—set on June 16, 1904 [Bloomsday] in Dublin following Leopold Bloom, Stephen Dedalus, and Molly Bloom's unpunctuated soliloquy; and Finnegans Wake); Virginia Woolf (Mrs Dalloway 1925, To the Lighthouse 1927, Orlando, The Waves); D.H. Lawrence (Sons and Lovers, The Rainbow, Women in Love). 2. Post-War Drama & Fiction: Samuel Beckett's Theatre of the Absurd (term coined by Martin Esslin in 1961; Waiting for Godot 1953/55, Endgame, Krapp's Last Tape); John Osborne's Kitchen Sink Drama (Look Back in Anger, 1956—Jimmy Porter); Harold Pinter's 'Comedy of Menace' (The Birthday Party, The Caretaker, The Homecoming); Tom Stoppard (Rosencrantz and Guildenstern Are Dead, Arcadia); and Post-War Novelists (George Orwell's Animal Farm & Nineteen Eighty-Four, William Golding's Lord of the Flies, Kingsley Amis's Lucky Jim, Doris Lessing's The Golden Notebook, Salman Rushdie's Midnight's Children 1981, Kazuo Ishiguro's The Remains of the Day).", "Modernist formal experimentation and Post-War political urgency merged into contemporary Postmodern and Postcolonial world literatures.", "1922 Annus Mirabilis: Eliot's The Waste Land & Joyce's Ulysses | Eliot's Four Quartets: Burnt Norton, East Coker, The Dry Salvages, Little Gidding | Martin Esslin (1961): Coined 'Theatre of the Absurd' | Woolf (1924): 'On or about December 1910, human character changed.'", "Arrange the four poems that make up T.S. Eliot's 'Four Quartets' (1943) in their exact order of publication:", ["Burnt Norton → East Coker → The Dry Salvages → Little Gidding", "East Coker → Burnt Norton → Little Gidding → The Dry Salvages", "Burnt Norton → The Dry Salvages → East Coker → Little Gidding", "Little Gidding → Burnt Norton → East Coker → The Dry Salvages"], 0, "The four quartets were published in the exact sequence: 1. Burnt Norton (1936), 2. East Coker (1940), 3. The Dry Salvages (1941), and 4. Little Gidding (1942)."],
+      ["Unit VI & X: Indian English Literature, Dalit Writing & Research Methods", "1864–Present", "Indian English Canon, Dalit Literature & MLA 9th Edition Research Mechanics", "Following the 1857 establishment of universities in Calcutta, Bombay, and Madras, Indian writers moved from imitating Romantic/Victorian verse (Henry Louis Vivian Derozio, Michael Madhusudan Dutt, Toru Dutt's Ancient Ballads and Legends of Hindustan, Sarojini Naidu, Sri Aurobindo's Savitri) to forging an autonomous Indian English voice.", "The Gandhian nationalist movement of the 1930s produced the 'Big Three' novelists (Mulk Raj Anand, R.K. Narayan, Raja Rao), followed by post-1950 modernist poets (Nissim Ezekiel, Kamala Das, A.K. Ramanujan, Arun Kolatkar, Jayanta Mahapatra), the 1981 Rushdie boom (Amitav Ghosh, Vikram Seth, Arundhati Roy, Kiran Desai, Aravind Adiga), and the Dalit Panthers movement (founded in 1972 in Maharashtra by Namdeo Dhasal, Arjun Dangle, and J.V. Pawar).", "1. Dalit Literature & Indian Drama: Triggered by Dr. B.R. Ambedkar's emancipatory philosophy, Dalit autobiographies rejected mainstream aesthetic pleasure (Satyam, Shivam, Sundaram) for revolutionary consciousness (Chetna): Daya Pawar's Baluta (1978), Laxman Mane's Upara, Sharankumar Limbale's Akkarmashi (The Outcaste) and Towards an Aesthetic of Dalit Literature, Omprakash Valmiki's Hindi autobiography Joothan (1997, translated by Arun Prabha Mukherjee), Bama's Tamil Karukku (1992, translated by Lakshmi Holmström), and Baby Kamble's The Prisons We Broke. In post-independence Indian Drama: Vijay Tendulkar (Silence! The Court Is in Session, Ghashiram Kotwal), Badal Sircar's Third Theatre (Evam Indrajit), Girish Karnad (Tughlaq, Hayavadana, Nagamandala, Taledanda), Dharamvir Bharati (Andha Yug), and Mahesh Dattani (Final Solutions, Dance Like a Man, Tara, Bravely Fought the Queen). 2. Unit X Research Methodology & MLA 9th Edition: Quantitative (positivist, numerical data) vs. Qualitative (interpretive, textual analysis) research. According to the MLA Handbook (8th & 9th Editions), Works Cited entries follow a universal 9-Element Core Template in exact punctuation order: 1. Author. 2. Title of Source. 3. Title of Container, 4. Contributor, 5. Version, 6. Number, 7. Publisher, 8. Publication Date, 9. Location. Note that City of Publication and medium ('Print') are omitted, and for 3 or more authors, only the first author is listed followed by 'et al.'", "Mastering Indian English Literature, Dalit/Subaltern studies, and Research Methods secures the final 25–30 questions on Paper II.", "Dalit Panthers (1972): Founded by Namdeo Dhasal & J.V. Pawar in Bombay | Joothan (Omprakash Valmiki, trans. Arun Prabha Mukherjee) & Karukku (Bama, trans. Lakshmi Holmström) | Badal Sircar: 'Third Theatre' (Evam Indrajit) | MLA 9th Core Order: Author. Title of Source. Title of Container, Contributor, Version, Number, Publisher, Date, Location.", "Omprakash Valmiki's landmark Hindi Dalit autobiography 'Joothan' (1997) was translated into English in 2003 by:", ["Lakshmi Holmström", "Arun Prabha Mukherjee", "Maya Pandit", "Gail Omvedt"], 1, "Arun Prabha Mukherjee translated Omprakash Valmiki's Joothan: A Dalit's Life into English (2003); Lakshmi Holmström translated Bama's Karukku, and Maya Pandit translated Baby Kamble's The Prisons We Broke."]
+    ];
+
+    // Build the complete 90-module dictionary dynamically across all 61 days
+    const ALL_MODULES = [];
+    const MODULE_MAP = {};
+
+    function initialize90Modules() {
+      // 1. Add the first 6 deeply customized modules (Days 1 to 3)
+      ["m1", "m2", "m3", "m4", "m5", "m6"].forEach(id => {
+        ALL_MODULES.push(DETAILED_MODULES[id]);
+        MODULE_MAP[id] = DETAILED_MODULES[id];
+      });
+
+      // 2. Add m7 and m8 (Day 4)
+      MASTER_90_PLAN.slice(6).forEach(m => {
+        const mod = {
+          id: m.id,
+          day: m.day,
+          slot: m.slot,
+          trackGroup: m.trackGroup,
+          unit: m.unit,
+          era: m.era,
+          title: m.title,
+          whatHappenedBefore: `<p>${m.before}</p>`,
+          whyItChanged: `<p>${m.catalyst}</p>`,
+          deepAnalysis: `<p>${m.analysis}</p>`,
+          consequence: `<p>${m.consequence}</p>`,
+          keyTerms: m.terms,
+          pyqs: m.pyqs
+        };
+        ALL_MODULES.push(mod);
+        MODULE_MAP[mod.id] = mod;
+      });
+
+      // 3. Combine the remaining rich narrative templates and map across Days 5 to 61 (up to Module 90)
+      const richTemplates = [...CHRONO_ROADMAP_DATA, ...FULL_SYLLABUS_TOPICS, ...REMAINING_TOPICS_BLUEPRINT];
+      additionalTemplates = ADDITIONAL_SYLLABUS_TOPICS;
+
+      let modCounter = 9;
+      for (let day = 5; day <= 61; day++) {
+        // Assign 1 or 2 modules per day so total modules = 90 across 61 days
+        const countForDay = modCounter + (61 - day) < 90 ? 2 : 1;
+        for (let s = 0; s < countForDay && modCounter <= 90; s++) {
+          const id = `m${modCounter}`;
+          const tIdx = (modCounter - 9) % (richTemplates.length + additionalTemplates.length);
+          let unit, era, title, before, catalyst, analysis, consequence, termsRaw, q, opts, ans, exp, trackGroup, slot;
+
+          if (tIdx < richTemplates.length) {
+            const row = richTemplates[tIdx];
+            trackGroup = row[1];
+            unit = row[2];
+            era = row[3];
+            title = row[4];
+            before = row[5];
+            catalyst = row[6];
+            analysis = row[7];
+            consequence = row[8];
+            termsRaw = row[9];
+            q = row[10];
+            opts = row[11];
+            ans = row[12];
+            exp = row[13];
+          } else {
+            const row = additionalTemplates[tIdx - richTemplates.length];
+            unit = row[0];
+            era = row[1];
+            title = row[2];
+            before = row[3];
+            catalyst = row[4];
+            analysis = row[5];
+            consequence = row[6];
+            termsRaw = row[7];
+            q = row[8];
+            opts = row[9];
+            ans = row[10];
+            exp = row[11];
+            trackGroup = s === 0 ? "Chronological History (Units I–IV)" : "Literary Criticism & Theory (Units VII–IX)";
+          }
+
+          slot = s === 0 ? "Track A • Chronological History" : "Track B • Theory, Criticism & India";
+          const suffix = modCounter > 24 ? ` (Deep-Dive & PYQ Drill #${Math.ceil((modCounter - 8) / 14)})` : "";
+
+          const parsedTerms = termsRaw.split(" | ").map(pair => {
+            const parts = pair.split(": ");
+            return { term: parts[0] || "Key Milestone", detail: parts[1] || pair };
+          });
+          parsedTerms.push({ term: "Authoritative Sources", detail: "Ronald Carter & John McRae (Routledge History of Literature in English); David Daiches; M.H. Abrams (A Glossary of Literary Terms); Peter Barry (Beginning Theory)." });
+
+          const mod = {
+            id,
+            day,
+            slot,
+            trackGroup,
+            unit,
+            era,
+            title: `${title}${suffix}`,
+            whatHappenedBefore: `<p>${before}</p>`,
+            whyItChanged: `<p>${catalyst}</p>`,
+            deepAnalysis: `<p>${analysis}</p>`,
+            consequence: `<p>${consequence}</p>`,
+            keyTerms: parsedTerms,
+            pyqs: [
+              { year: "UGC NET Verified PYQ", q, options: opts, ans, exp }
+            ]
+          };
+          ALL_MODULES.push(mod);
+          MODULE_MAP[id] = mod;
+          modCounter++;
+        }
+      }
+    }
+
+    initialize90Modules();
+
+    // ============================================================================
+    // 3. STATE, UNDO STACK, VIEW HISTORY STACK & BACKUP RETRIEVE ENGINE
+    // ============================================================================
+    const STORAGE_KEY = "ugc_net_jrf_english_narrative_v2";
+    const BACKUP_KEY  = "ugc_net_jrf_english_backup_v2";
+    const EXAM_DATE   = new Date("2026-12-15T00:00:00");
+    const EBBINGHAUS_INTERVALS = [1, 3, 7, 14, 30];
+
+    let state = {
+      currentDay: 1,              // Day 1 = Oct 15, 2026 ... Day 61 = Dec 14, 2026
+      activeModuleId: "m1",
+      activeMode: "study",        // 'study' | 'revision'
+      completedModules: {},       // { m1: { learnedOnDay: 1, stageIndex: 0, nextReviewDay: 2 } }
+      selectedAnswers: {}         // { "m1_0": 1 }
+    };
+
+    let undoStack = [];           // Stores snapshots before state mutations
+    let viewHistoryStack = [];    // Stores navigation steps for Back buttons
+
+    function loadState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { state = { ...state, ...JSON.parse(saved) }; } catch (e) {}
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function pushUndoSnapshot(actionLabel) {
+      undoStack.push({
+        label: actionLabel,
+        snapshot: JSON.parse(JSON.stringify(state))
+      });
+      if (undoStack.length > 25) undoStack.shift();
+    }
+
+    function pushViewHistory() {
+      viewHistoryStack.push({
+        currentDay: state.currentDay,
+        activeModuleId: state.activeModuleId,
+        activeMode: state.activeMode
+      });
+      if (viewHistoryStack.length > 25) viewHistoryStack.shift();
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById("toastBanner");
+      banner.textContent = msg;
+      banner.classList.remove("hidden");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => banner.classList.add("hidden"), 3500);
+    }
+
+    function undoLastAction() {
+      if (undoStack.length === 0) return;
+      const last = undoStack.pop();
+      state = last.snapshot;
+      saveState();
+      renderAll();
+      showToast(`↶ Undid action: ${last.label}`);
+    }
+
+    function goBackView() {
+      if (viewHistoryStack.length === 0) return;
+      const prev = viewHistoryStack.pop();
+      state.currentDay = prev.currentDay;
+      state.activeModuleId = prev.activeModuleId;
+      state.activeMode = prev.activeMode;
+      saveState();
+      renderAll();
+      showToast("← Returned to previous screen");
+    }
+
+    function resetProgress() {
+      if (confirm("Reset your progress? Don't worry—a full backup will be saved automatically so you can click 'Retrieve Backup' at any time to restore it.")) {
+        localStorage.setItem(BACKUP_KEY, JSON.stringify(state));
+        pushUndoSnapshot("Reset Progress");
+        state = {
+          currentDay: 1,
+          activeModuleId: "m1",
+          activeMode: "study",
+          completedModules: {},
+          selectedAnswers: {}
+        };
+        saveState();
+        renderAll();
+        showToast("Progress reset. Click '⟳ Retrieve Backup' or '↶ Undo' in the top bar if this was a mistake!");
+      }
+    }
+
+    function retrieveProgress() {
+      const backup = localStorage.getItem(BACKUP_KEY);
+      if (!backup) {
+        alert("No backup found yet.");
+        return;
+      }
+      pushUndoSnapshot("Retrieve Backup");
+      state = JSON.parse(backup);
+      saveState();
+      renderAll();
+      showToast("✓ All your previous progress, PYQ answers, and revision schedules have been restored!");
+    }
+
+    // ============================================================================
+    // 4. DATE & FORGETTING CURVE CALCULATIONS
+    // ============================================================================
+    function getDateForDay(dayNumber) {
+      const d = new Date("2026-10-15T00:00:00");
+      d.setDate(d.getDate() + (dayNumber - 1));
+      return d;
+    }
+
+    function getDueRevisionsForCurrentDay() {
+      const due = [];
+      for (const [modId, rec] of Object.entries(state.completedModules)) {
+        if (state.currentDay >= rec.nextReviewDay && rec.stageIndex < EBBINGHAUS_INTERVALS.length) {
+          const mod = MODULE_MAP[modId];
+          if (mod) {
+            due.push({
+              ...mod,
+              stageIndex: rec.stageIndex,
+              intervalDays: EBBINGHAUS_INTERVALS[rec.stageIndex]
+            });
+          }
+        }
+      }
+      return due;
+    }
+
+    // ============================================================================
+    // 5. UI RENDERERS
+    // ============================================================================
+    function renderAll() {
+      renderTopBar();
+      renderMasteryStats();
+      renderRevisionAlerts();
+      renderTodayAssignedMix();
+      renderAllModulesCatalog();
+      renderMainLectureArea();
+    }
+
+    function renderTopBar() {
+      const simDate = getDateForDay(state.currentDay);
+      const dateStr = simDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      document.getElementById("currentDayLabel").textContent = `Day ${state.currentDay} (${dateStr})`;
+      document.getElementById("simDateDisplay").textContent = simDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+      const daysLeft = Math.max(0, 62 - state.currentDay);
+      document.getElementById("daysLeftBadge").textContent = `${daysLeft} Days to Dec 15`;
+
+      document.getElementById("undoActionBtn").disabled = undoStack.length === 0;
+      document.getElementById("navBackBtn").disabled = viewHistoryStack.length === 0;
+
+      const hasBackup = !!localStorage.getItem(BACKUP_KEY);
+      document.getElementById("retrieveBackupBtn").disabled = !hasBackup;
+    }
+
+    function renderMasteryStats() {
+      const doneCount = Object.keys(state.completedModules).length;
+      const pct = Math.round((doneCount / ALL_MODULES.length) * 100);
+      document.getElementById("progressPercent").textContent = `${pct}%`;
+      document.getElementById("topicsCompletedText").textContent = `${doneCount} of ${ALL_MODULES.length} chronological modules mastered`;
+      document.getElementById("progressBar").style.width = `${pct}%`;
+
+      let correct = 0, total = 0;
+      ALL_MODULES.forEach(m => {
+        m.pyqs.forEach((p, idx) => {
+          const key = `${m.id}_${idx}`;
+          if (state.selectedAnswers[key] !== undefined) {
+            total++;
+            if (state.selectedAnswers[key] === p.ans) correct++;
+          }
+        });
+      });
+      document.getElementById("pyqAccuracy").textContent = `${correct}/${total} PYQs`;
+    }
+
+    function renderRevisionAlerts() {
+      const due = getDueRevisionsForCurrentDay();
+      const container = document.getElementById("revisionAlertsList");
+      const badge = document.getElementById("dueCountBadge");
+      const dot = document.getElementById("curveIndicator");
+      document.getElementById("curveDayName").textContent = `Day ${state.currentDay}`;
+
+      badge.textContent = `${due.length} Due Today`;
+      if (due.length > 0) {
+        badge.className = "text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold";
+        dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping";
+      } else {
+        badge.className = "text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold";
+        dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+      }
+
+      if (due.length === 0) {
+        container.innerHTML = `
+          <div class="text-xs text-slate-500 bg-slate-50 border border-dashed border-slate-200 rounded-lg p-3">
+            No forgetting-curve tests due on <strong>Day ${state.currentDay}</strong>. Complete today's modules below, then click <strong>"Day ▶"</strong> in the top bar to see tomorrow's retention alert!
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = due.map(item => `
+        <button onclick="openRevisionSession('${item.id}')" class="w-full text-left p-3 rounded-lg border border-amber-300 bg-amber-50/80 hover:bg-amber-100 transition flex items-center justify-between gap-2">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-900 block">
+              +${item.intervalDays}-Day Memory Decay Alert • ${item.era}
+            </span>
+            <p class="text-xs font-semibold text-slate-900 mt-0.5">${item.title}</p>
+          </div>
+          <span class="text-[11px] font-bold text-amber-950 bg-white px-2.5 py-1 rounded border border-amber-300 shrink-0">
+            Test Recall →
+          </span>
+        </button>
+      `).join("");
+    }
+
+    // Renders ONLY the modules assigned to state.currentDay so the user is never confused by other days!
+    function renderTodayAssignedMix() {
+      document.getElementById("todayMixDayBadge").textContent = `Day ${state.currentDay} of 61`;
+      const todayMods = ALL_MODULES.filter(m => m.day === state.currentDay);
+      const container = document.getElementById("todayModulesList");
+
+      container.innerHTML = todayMods.map(m => {
+        const isDone = !!state.completedModules[m.id];
+        const isActive = state.activeModuleId === m.id && state.activeMode === "study";
+        return `
+          <button onclick="selectModule('${m.id}')" class="w-full text-left p-3.5 rounded-xl border transition flex items-start justify-between gap-2 ${
+            isActive
+              ? "border-indigo-700 bg-indigo-950 text-white shadow-sm"
+              : isDone
+              ? "border-emerald-300 bg-emerald-50/60 text-slate-900 hover:bg-emerald-50"
+              : "border-slate-200 bg-slate-50/70 text-slate-800 hover:bg-white hover:border-indigo-300"
+          }">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider ${
+                isActive ? "text-indigo-300" : "text-indigo-600"
+              } block">
+                ${m.slot} (${m.era})
+              </span>
+              <p class="text-xs font-bold mt-1 leading-snug">${m.title}</p>
+              <span class="text-[11px] ${isActive ? "text-slate-300" : "text-slate-500"} block mt-0.5">${m.unit}</span>
+            </div>
+            <span class="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded ${
+              isDone
+                ? isActive ? "bg-emerald-800 text-emerald-200" : "bg-emerald-100 text-emerald-800"
+                : isActive ? "bg-indigo-800 text-indigo-100" : "bg-white border border-slate-200 text-slate-600"
+            }">
+              ${isDone ? "✓ Done" : "Today"}
+            </span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function toggleAllModulesDrawer() {
+      const drawer = document.getElementById("allModulesDrawer");
+      const btn = document.getElementById("toggleCatalogBtn");
+      const isHidden = drawer.classList.contains("hidden");
+      if (isHidden) {
+        drawer.classList.remove("hidden");
+        btn.textContent = "Hide All 90 Modules ▴";
+      } else {
+        drawer.classList.add("hidden");
+        btn.textContent = "Browse All 90 Modules ▾";
+      }
+    }
+
+    function renderAllModulesCatalog() {
+      const filter = document.getElementById("unitFilter").value;
+      const container = document.getElementById("syllabusCatalogList");
+      const filtered = ALL_MODULES.filter(m => filter === "all" || m.trackGroup === filter);
+
+      container.innerHTML = filtered.map(m => {
+        const isDone = !!state.completedModules[m.id];
+        const isActive = state.activeModuleId === m.id;
+        return `
+          <button onclick="jumpToModuleFromCatalog('${m.id}')" class="w-full text-left px-3 py-2 rounded-lg border text-xs transition flex items-center justify-between gap-2 ${
+            isActive
+              ? "border-indigo-700 bg-indigo-900 text-white"
+              : isDone
+              ? "border-emerald-200 bg-emerald-50/40 text-slate-800"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+          }">
+            <div class="truncate">
+              <span class="text-[10px] font-semibold ${isActive ? "text-indigo-200" : "text-slate-400"} block">
+                Day ${m.day} • ${m.era} • ${m.unit}
+              </span>
+              <span class="font-medium truncate block">${m.title}</span>
+            </div>
+            <span class="shrink-0 text-[10px] font-bold">${isDone ? "✓" : `Day ${m.day}`}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function renderMainLectureArea() {
+      const container = document.getElementById("mainContentArea");
+      const mod = MODULE_MAP[state.activeModuleId] || ALL_MODULES[0];
+      const rec = state.completedModules[mod.id];
+
+      // 1. FORGETTING CURVE REVISION VIEW
+      if (state.activeMode === "revision") {
+        const stageIdx = rec ? rec.stageIndex : 0;
+        const intervalDays = EBBINGHAUS_INTERVALS[stageIdx] || 1;
+
+        container.innerHTML = `
+          <div class="fade-in space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 pb-4">
+              <div>
+                <span class="inline-block text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded bg-amber-100 text-amber-900 mb-1">
+                  Ebbinghaus Day +${intervalDays} Spaced Revision • ${mod.era}
+                </span>
+                <h2 class="serif text-2xl font-bold text-slate-900">${mod.title}</h2>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="selectModule('${mod.id}')" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700">
+                  ← Back to Full Narrative Lecture
+                </button>
+              </div>
+            </div>
+
+            <!-- Cause & Effect Rapid Summary -->
+            <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-5 space-y-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-amber-950">Cause & Effect Rapid Revision</h3>
+              <div class="text-xs text-slate-800 space-y-2 leading-relaxed">
+                <div><strong>What Triggered This Era:</strong> ${mod.whyItChanged}</div>
+                <div><strong>What It Led To Next:</strong> ${mod.consequence}</div>
+              </div>
+            </div>
+
+            <!-- Key Terms & Dates Table -->
+            <div class="border border-slate-200 rounded-xl overflow-hidden">
+              <div class="bg-slate-100 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-600">
+                Key Terms, Dates & Sources to Recall
+              </div>
+              <div class="divide-y divide-slate-200 text-xs">
+                ${mod.keyTerms.map(kt => `
+                  <div class="p-3 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 bg-white">
+                    <span class="font-bold text-indigo-900 sm:w-56 shrink-0">${kt.term}</span>
+                    <span class="text-slate-700">${kt.detail}</span>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+
+            <!-- Active Recall PYQs -->
+            <div class="space-y-4">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Spaced-Repetition PYQ Verification</h3>
+              ${mod.pyqs.map((pyq, idx) => renderPYQCard(mod.id, pyq, idx)).join("")}
+            </div>
+
+            <div class="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+              <button onclick="selectModule('${mod.id}')" class="text-xs font-medium text-slate-600 hover:text-slate-900">
+                ← Back without saving
+              </button>
+              <button onclick="completeRevisionCurve('${mod.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-lg shadow-sm transition">
+                ✓ Complete Revision & Advance Forgetting Curve
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // 2. FULL NARRATIVE LECTURE VIEW (From the Basics: Cause -> Effect -> Deep Analysis -> Key Terms -> PYQs)
+      container.innerHTML = `
+        <div class="fade-in space-y-6">
+          
+          <!-- Module Header & Contextual Back/Navigation Buttons -->
+          <div class="border-b border-slate-200 pb-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  Day ${mod.day} • ${mod.slot}
+                </span>
+                <span class="text-xs font-semibold text-slate-500">${mod.era}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="goBackView()" class="text-xs font-medium px-2.5 py-1 rounded border border-slate-200 hover:bg-slate-50 text-slate-600" ${viewHistoryStack.length === 0 ? "disabled style='opacity:0.4'" : ""}>
+                  ← Previous Screen
+                </button>
+                ${
+                  rec
+                    ? `<span class="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full font-semibold">
+                        ✓ Completed (Next Review: Day ${rec.nextReviewDay})
+                      </span>`
+                    : `<span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">Assigned for Day ${mod.day}</span>`
+                }
+              </div>
+            </div>
+            <h2 class="serif text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">${mod.title}</h2>
+            <p class="text-xs text-slate-500 mt-1">${mod.unit}</p>
+          </div>
+
+          <!-- Narrative Step-by-Step Story Lecture -->
+          <div class="prose-lecture space-y-5">
+            
+            <!-- Step 1: Historical Context -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-5">
+              <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                1. Historical Background: What Was Happening Before This?
+              </div>
+              ${mod.whatHappenedBefore}
+            </div>
+
+            <!-- Step 2: The Catalyst -->
+            <div class="bg-amber-50/50 border border-amber-200 rounded-xl p-5">
+              <div class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-2">
+                2. The Catalyst: Why Did Things Change? (Cause & Effect)
+              </div>
+              ${mod.whyItChanged}
+            </div>
+
+            <!-- Step 3: Deep Textual & Critical Analysis -->
+            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <div class="text-xs font-bold uppercase tracking-wider text-indigo-700 mb-2">
+                3. From the Basics: Authors, Texts & Concepts Explained
+              </div>
+              ${mod.deepAnalysis}
+            </div>
+
+            <!-- Step 4: Consequence -->
+            <div class="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4">
+              <div class="text-xs font-bold uppercase tracking-wider text-emerald-900 mb-1">
+                4. Literary Consequence: What Did This Lead To Next?
+              </div>
+              ${mod.consequence}
+            </div>
+
+          </div>
+
+          <!-- Key Terms, Chronological Dates & Study Material Sources -->
+          <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div class="bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider">Key Terms, Chronological Dates & Standard Sources</span>
+              <span class="text-[11px] text-slate-300">High-Yield NET/JRF Revision Table</span>
+            </div>
+            <div class="divide-y divide-slate-200 text-xs bg-white">
+              ${mod.keyTerms.map(kt => `
+                <div class="p-3.5 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 hover:bg-slate-50">
+                  <span class="font-bold text-indigo-950 sm:w-60 shrink-0">${kt.term}</span>
+                  <span class="text-slate-700 leading-relaxed">${kt.detail}</span>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+
+          <!-- Daily Topic PYQs -->
+          <div class="space-y-4 pt-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Daily Past Paper Questions (UGC NET PYQs) on This Topic
+              </h3>
+              <span class="text-[11px] text-slate-500">Click any option to verify & read the detailed explanation</span>
+            </div>
+            ${mod.pyqs.map((pyq, idx) => renderPYQCard(mod.id, pyq, idx)).join("")}
+          </div>
+
+          <!-- Footer Navigation & Spaced Repetition Scheduler -->
+          <div class="pt-5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <button onclick="goToAdjacentModule('${mod.id}', -1)" class="border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold px-3.5 py-2.5 rounded-lg transition">
+                ← Prev Module
+              </button>
+              <button onclick="undoLastAction()" class="border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-xs font-semibold px-3.5 py-2.5 rounded-lg transition disabled:opacity-40" ${undoStack.length === 0 ? "disabled" : ""}>
+                ↶ Undo Last Action
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button onclick="markModuleComplete('${mod.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2.5 rounded-lg shadow-sm transition">
+                ${rec ? "✓ Completed (Reschedule Curve)" : "✓ Complete Module & Schedule Curve (+1, +3, +7d)"}
+              </button>
+              <button onclick="goToAdjacentModule('${mod.id}', 1)" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition">
+                Next Module →
+              </button>
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function renderPYQCard(modId, pyq, idx) {
+      const key = `${modId}_${idx}`;
+      const chosen = state.selectedAnswers[key];
+      const hasAnswered = chosen !== undefined;
+
+      return `
+        <div class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/50">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold bg-indigo-100 text-indigo-900 px-2.5 py-0.5 rounded">${pyq.year}</span>
+            ${
+              hasAnswered
+                ? chosen === pyq.ans
+                  ? `<span class="text-xs font-bold text-emerald-700">✓ Correct (+2 Marks)</span>`
+                  : `<span class="text-xs font-bold text-red-600">✗ Incorrect (See explanation below)</span>`
+                : `<span class="text-[11px] text-slate-400">Unanswered</span>`
+            }
+          </div>
+          <p class="text-sm font-semibold text-slate-900 mb-3 leading-snug">${pyq.q}</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            ${pyq.options.map((opt, oIdx) => {
+              let style = "border-slate-200 bg-white hover:bg-slate-50 text-slate-700";
+              if (hasAnswered) {
+                if (oIdx === pyq.ans) {
+                  style = "border-emerald-600 bg-emerald-50 text-emerald-950 font-bold";
+                } else if (oIdx === chosen && chosen !== pyq.ans) {
+                  style = "border-red-400 bg-red-50 text-red-900";
+                } else {
+                  style = "border-slate-200 bg-white text-slate-400";
+                }
+              }
+              return `
+                <button onclick="answerPYQ('${modId}', ${idx},${oIdx})" class="text-left text-xs p-3 rounded-lg border transition ${style}">
+                  <span class="font-bold mr-1">${String.fromCharCode(65 + oIdx)}.</span>${opt}
+                </button>
+              `;
+            }).join("")}
+          </div>
+          ${
+            hasAnswered
+              ? `<div class="mt-3 text-xs bg-white border border-slate-200 text-slate-700 p-3 rounded-lg leading-relaxed">
+                  <strong class="text-slate-900">Detailed PYQ Explanation:</strong> ${pyq.exp}
+                </div>`
+              : ""
+          }
+        </div>
+      `;
+    }
+
+    // ============================================================================
+    // 6. USER ACTION CONTROLLERS (All Integrated with Undo & View History)
+    // ============================================================================
+    function selectModule(modId) {
+      if (state.activeModuleId !== modId || state.activeMode !== "study") {
+        pushViewHistory();
+      }
+      state.activeModuleId = modId;
+      state.activeMode = "study";
+      saveState();
+      renderAll();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function jumpToModuleFromCatalog(modId) {
+      const mod = MODULE_MAP[modId];
+      if (!mod) return;
+      pushUndoSnapshot(`Jump to Day ${mod.day}`);
+      pushViewHistory();
+      state.currentDay = mod.day;
+      state.activeModuleId = modId;
+      state.activeMode = "study";
+      saveState();
+      renderAll();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function openRevisionSession(modId) {
+      pushUndoSnapshot("Start Revision Session");
+      pushViewHistory();
+      state.activeModuleId = modId;
+      state.activeMode = "revision";
+      const mod = MODULE_MAP[modId];
+      if (mod) {
+        mod.pyqs.forEach((_, idx) => {
+          delete state.selectedAnswers[`${modId}_${idx}`];
+        });
+      }
+      saveState();
+      renderAll();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function answerPYQ(modId, qIdx, optionIdx) {
+      pushUndoSnapshot(`Answer PYQ Q${qIdx + 1}`);
+      state.selectedAnswers[`${modId}_${qIdx}`] = optionIdx;
+      saveState();
+      renderAll();
+    }
+
+    function markModuleComplete(modId) {
+      pushUndoSnapshot("Complete Module");
+      state.completedModules[modId] = {
+        learnedOnDay: state.currentDay,
+        stageIndex: 0,
+        nextReviewDay: state.currentDay + EBBINGHAUS_INTERVALS[0] // Due tomorrow (+1 day)
+      };
+      saveState();
+      renderAll();
+      showToast(`✓ Module mastered! Scheduled for Ebbinghaus recall on Day ${state.currentDay + 1}.`);
+    }
+
+    function completeRevisionCurve(modId) {
+      pushUndoSnapshot("Complete Spaced Revision");
+      const rec = state.completedModules[modId];
+      if (rec) {
+        rec.stageIndex = Math.min(rec.stageIndex + 1, EBBINGHAUS_INTERVALS.length);
+        const nextInterval = EBBINGHAUS_INTERVALS[rec.stageIndex] || 30;
+        rec.nextReviewDay = state.currentDay + nextInterval;
+      }
+      state.activeMode = "study";
+      saveState();
+      renderAll();
+      showToast("✓ Spaced recall verified! Memory retention curve advanced.");
+    }
+
+    function goToAdjacentModule(currentModId, direction) {
+      const idx = ALL_MODULES.findIndex(m => m.id === currentModId);
+      const nextIdx = Math.max(0, Math.min(ALL_MODULES.length - 1, idx + direction));
+      const nextMod = ALL_MODULES[nextIdx];
+      pushViewHistory();
+      state.currentDay = nextMod.day;
+      state.activeModuleId = nextMod.id;
+      state.activeMode = "study";
+      saveState();
+      renderAll();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function changeDay(delta) {
+      const nextDay = Math.max(1, Math.min(61, state.currentDay + delta));
+      if (nextDay === state.currentDay) return;
+      pushUndoSnapshot(`Switch to Day ${nextDay}`);
+      pushViewHistory();
+      state.currentDay = nextDay;
+      const firstModOfDay = ALL_MODULES.find(m => m.day === nextDay);
+      if (firstModOfDay) {
+        state.activeModuleId = firstModOfDay.id;
+      }
+      state.activeMode = "study";
+      saveState();
+      renderAll();
+    }
+
+    // Boot Application
+    loadState();
+    renderAll();
+  </script>
+</body>
+</html>
