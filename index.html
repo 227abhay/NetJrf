@@ -1,10 +1,9 @@
-@227abhay
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JRF • 60 days No bakchodi</title>
+  <title>UGC NET/JRF English • 61-Day Narrative Coach</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap');
@@ -1416,6 +1415,252 @@
     // Boot Application
     loadState();
     renderAll();
+// ============================================================================
+    // 7. MULTI-USER USERNAME LOGIN & REAL-TIME CLOUD SYNC (Phone + Laptop)
+    // ============================================================================
+    // 👇 PASTE YOUR FIREBASE REALTIME DATABASE URL INSIDE THE QUOTES BELOW:
+    const FIREBASE_DB_URL = "https://net-jrf-english-default-rtdb.firebaseio.com"; 
+
+    const ACTIVE_USER_KEY = "ugc_net_active_username";
+    let currentUsername = localStorage.getItem(ACTIVE_USER_KEY) || "";
+
+    function cleanUsername(name) {
+      return name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    }
+
+    function getDefaultFreshState() {
+      return {
+        currentDay: 1,
+        activeModuleId: "m1",
+        activeMode: "study",
+        completedModules: {},
+        selectedAnswers: {}
+      };
+    }
+
+    // Build and inject the Full-Screen Login Overlay + Header User Switcher
+    function initMultiUserUI() {
+      // 1. Inject Login Modal Overlay
+      const modal = document.createElement("div");
+      modal.id = "userLoginModal";
+      modal.className = "fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 hidden";
+      modal.innerHTML = `
+        <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl fade-in text-center">
+          <div class="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+            🎓
+          </div>
+          <h2 class="serif text-2xl font-bold text-slate-900">NET/JRF English Portal</h2>
+          <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+            Enter your unique username to load your personal 61-day study plan, PYQ score, and Ebbinghaus forgetting-curve queue across your phone and laptop.
+          </p>
+          <form onsubmit="handleUsernameLogin(event)" class="mt-5 space-y-3 text-left">
+            <div>
+              <label class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Your Username</label>
+              <input id="loginUsernameInput" type="text" required placeholder="e.g. abhay, kunal, vanshika" 
+                class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-600 font-medium" />
+              <span class="text-[11px] text-slate-400 block mt-1">Letters and numbers only. Use the exact same username on your phone & laptop.</span>
+            </div>
+            <button id="loginSubmitBtn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-3 rounded-xl shadow-sm transition">
+              Continue to My Dashboard →
+            </button>
+          </form>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // 2. Inject User Badge & Switch Button into the Top Header
+      const resetBtn = document.querySelector("button[onclick='resetProgress()']");
+      if (resetBtn && resetBtn.parentElement) {
+        const userPill = document.createElement("div");
+        userPill.className = "inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 rounded-lg px-2.5 py-1";
+        userPill.innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-emerald-500" id="cloudSyncDot"></span>
+          <span id="headerUsernameDisplay" class="text-xs font-bold text-indigo-950">Guest</span>
+          <span id="cloudSyncStatusText" class="text-[10px] text-indigo-600 font-medium">(Synced)</span>
+          <button onclick="openLoginModal()" class="ml-1 text-[11px] font-semibold text-indigo-700 hover:text-indigo-950 underline" title="Switch User Profile">
+            Switch User
+          </button>
+        `;
+        resetBtn.parentElement.insertBefore(userPill, resetBtn);
+      }
+
+      // Check if user is already logged in on this device
+      if (!currentUsername) {
+        openLoginModal();
+      } else {
+        updateUserHeaderBadge(currentUsername, "Loading...");
+        loadUserProgressFromServer(currentUsername);
+      }
+    }
+
+    function openLoginModal() {
+      const modal = document.getElementById("userLoginModal");
+      const input = document.getElementById("loginUsernameInput");
+      if (modal) {
+        modal.classList.remove("hidden");
+        if (input) {
+          input.value = currentUsername || "";
+          setTimeout(() => input.focus(), 50);
+        }
+      }
+    }
+
+    function updateUserHeaderBadge(username, statusText) {
+      const nameEl = document.getElementById("headerUsernameDisplay");
+      const statusEl = document.getElementById("cloudSyncStatusText");
+      if (nameEl) nameEl.textContent = `@${username}`;
+      if (statusEl) statusEl.textContent = statusText;
+    }
+
+    async function handleUsernameLogin(e) {
+      e.preventDefault();
+      const rawInput = document.getElementById("loginUsernameInput").value;
+      const cleaned = cleanUsername(rawInput);
+      if (!cleaned) {
+        alert("Please enter a valid username using letters or numbers.");
+        return;
+      }
+
+      const btn = document.getElementById("loginSubmitBtn");
+      btn.textContent = "Loading your cloud profile...";
+      btn.disabled = true;
+
+      currentUsername = cleaned;
+      localStorage.setItem(ACTIVE_USER_KEY, currentUsername);
+
+      await loadUserProgressFromServer(currentUsername);
+
+      btn.textContent = "Continue to My Dashboard →";
+      btn.disabled = false;
+      document.getElementById("userLoginModal").classList.add("hidden");
+    }
+
+    function getCleanDbUrl() {
+      return FIREBASE_DB_URL.trim().replace(/\/$/, "");
+    }
+
+    // Pull user's specific progress from Firebase Server (or create a fresh profile if new user)
+    async function loadUserProgressFromServer(username) {
+      const dbUrl = getCleanDbUrl();
+      const localUserKey = `${STORAGE_KEY}_user_${username}`;
+
+      // If Firebase URL isn't configured yet, fallback cleanly to per-user local storage
+      if (!dbUrl || dbUrl.includes("YOUR_FIREBASE_DATABASE_URL")) {
+        const localSaved = localStorage.getItem(localUserKey);
+        state = localSaved ? JSON.parse(localSaved) : getDefaultFreshState();
+        undoStack = [];
+        viewHistoryStack = [];
+        renderAll();
+        updateUserHeaderBadge(username, "(Local Mode)");
+        showToast(`👋 Welcome @${username}! (Add Firebase URL in code to enable cross-device sync)`);
+        return;
+      }
+
+      try {
+        updateUserHeaderBadge(username, "Syncing...");
+        const res = await fetch(`${dbUrl}/users/${username}.json`);
+        const data = await res.json();
+
+        if (data && data.state) {
+          // Existing user found on server! Load their cloud progress
+          state = {
+            ...getDefaultFreshState(),
+            ...data.state,
+            completedModules: data.state.completedModules || {},
+            selectedAnswers: data.state.selectedAnswers || {}
+          };
+          localStorage.setItem(localUserKey, JSON.stringify(state));
+          showToast(`☁️✓ Welcome back, @${username}! Progress synced from server.`);
+        } else {
+          // Brand new classmate! Initialize fresh profile for them
+          const localFallback = localStorage.getItem(localUserKey);
+          state = localFallback ? JSON.parse(localFallback) : getDefaultFreshState();
+          await saveUserProgressToServer(username, true);
+          showToast(`🎉 Created new cloud profile for @${username}!`);
+        }
+        undoStack = [];
+        viewHistoryStack = [];
+        renderAll();
+        updateUserHeaderBadge(username, "☁️ Synced");
+      } catch (err) {
+        // Offline fallback
+        const localSaved = localStorage.getItem(localUserKey);
+        if (localSaved) state = JSON.parse(localSaved);
+        renderAll();
+        updateUserHeaderBadge(username, "⚠️ Offline");
+      }
+    }
+
+    // Save current user's state directly to their personal folder on the server
+    async function saveUserProgressToServer(username, silent = true) {
+      if (!username) return;
+      const localUserKey = `${STORAGE_KEY}_user_${username}`;
+      localStorage.setItem(localUserKey, JSON.stringify(state));
+
+      const dbUrl = getCleanDbUrl();
+      if (!dbUrl || dbUrl.includes("YOUR_FIREBASE_DATABASE_URL")) return;
+
+      try {
+        updateUserHeaderBadge(username, "Saving...");
+        const res = await fetch(`${dbUrl}/users/${username}.json`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: username,
+            updatedAt: new Date().toISOString(),
+            state: state
+          })
+        });
+        if (res.ok) {
+          updateUserHeaderBadge(username, "☁️ Synced");
+          if (!silent) showToast(`☁️✓ Saved @${username}'s progress to cloud!`);
+        }
+      } catch (err) {
+        updateUserHeaderBadge(username, "⚠️ Offline");
+      }
+    }
+
+    // Automatically hook into saveState() so every click saves to that specific user's cloud profile!
+    saveState = function() {
+      if (!currentUsername) return;
+      const localUserKey = `${STORAGE_KEY}_user_${currentUsername}`;
+      localStorage.setItem(localUserKey, JSON.stringify(state));
+
+      clearTimeout(window.__userCloudSaveTimer);
+      window.__userCloudSaveTimer = setTimeout(() => {
+        saveUserProgressToServer(currentUsername, true);
+      }, 600);
+    };
+
+    // Keep per-user backups separate too when clicking Reset / Retrieve
+    const _origResetProgress = resetProgress;
+    resetProgress = function() {
+      if (!currentUsername) return;
+      if (confirm(`Reset progress for @${currentUsername}? A backup will be saved first so you can click 'Retrieve Backup' anytime.`)) {
+        localStorage.setItem(`${BACKUP_KEY}_${currentUsername}`, JSON.stringify(state));
+        pushUndoSnapshot("Reset Progress");
+        state = getDefaultFreshState();
+        saveState();
+        renderAll();
+        showToast(`Reset @${currentUsername}'s progress. Click '⟳ Retrieve Backup' to restore!`);
+      }
+    };
+
+    retrieveProgress = function() {
+      if (!currentUsername) return;
+      const userBackup = localStorage.getItem(`${BACKUP_KEY}_${currentUsername}`);
+      if (!userBackup) {
+        alert(`No backup found for @${currentUsername}.`);
+        return;
+      }
+      pushUndoSnapshot("Retrieve Backup");
+      state = JSON.parse(userBackup);
+      saveState();
+      renderAll();
+      showToast(`✓ Restored @${currentUsername}'s backup!`);
+    };
+
+    window.addEventListener("DOMContentLoaded", initMultiUserUI);
   </script>
 </body>
 </html>
