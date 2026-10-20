@@ -3346,6 +3346,265 @@
 
     finalizeAll90Modules();
     renderAll();
+    // ============================================================================
+    // 8. GEMINI AI PROFESSOR & NOTEBOOKLM INTEGRATION (TEACH ME FROM SCRATCH)
+    // ============================================================================
+    const GEMINI_API_KEY_STORAGE = "ugc_net_gemini_api_key";
+    const NOTEBOOK_LM_URL = "https://gemini.google.com/notebook/df02c060-c921-47a4-af32-8b3de905cc69";
+
+    // Cache of AI-generated deep lectures (also syncs to Firebase per module!)
+    let aiLectureCache = JSON.parse(localStorage.getItem("ugc_net_ai_cache_v1") || "{}");
+
+    function getGeminiApiKey() {
+      return localStorage.getItem(GEMINI_API_KEY_STORAGE) || "";
+    }
+
+    function configureGeminiApiKey() {
+      const current = getGeminiApiKey();
+      const input = prompt(
+        "🔑 Enter your free Google Gemini API Key (from aistudio.google.com/app/apikey):\n\n" +
+        "(Once saved, clicking '✨ AI Teach Me Thoroughly' on any module will generate a full, beginner-friendly lecture with complete chronologies, character lists & plot summaries right inside your site!)",
+        current
+      );
+      if (input !== null) {
+        localStorage.setItem(GEMINI_API_KEY_STORAGE, input.trim());
+        showToast(input.trim() ? "✓ Gemini API Key saved! Click '✨ AI Teach Me Thoroughly' on any module." : "API Key cleared.");
+        renderAll();
+      }
+    }
+
+    // Builds the exact prompt for either Gemini API or your NetJrf NotebookLM
+    function buildDeepTeachingPrompt(mod, customQuestion = "") {
+      const termsList = (mod.keyTerms || []).map(k => `${k.term} (${k.detail})`).join("; ");
+      if (customQuestion) {
+        return `You are a master UGC NET/JRF English Literature Professor teaching a beginner from scratch.
+Topic: Day ${mod.day} - ${mod.title} (${mod.unit}, Era: ${mod.era}).
+Student's Question: "${customQuestion}"
+
+Please explain this thoroughly in simple, clear, engaging language for someone reading it for the first time. Include:
+1. Clear step-by-step explanation from the basics.
+2. Complete chronological list of works (with exact publication years and subtitles).
+3. Full plot summaries and main character names of key texts (like Coolie, Untouchable, Kanthapura, etc. if relevant).
+4. High-yield UGC NET pointers and memory tricks.`;
+      }
+
+      return `You are an expert UGC NET/JRF English Literature Professor teaching a beginner student from scratch.
+Current Module: Day ${mod.day} • ${mod.title} (${mod.unit} | Era: ${mod.era}).
+Core Syllabus Keywords in this Module: ${termsList}
+
+The student feels the summary is too brief and wants a THOROUGH, EASY-TO-UNDERSTAND, COMPLETE lecture from zero. Please teach this entire module in detail with the following sections:
+1. 🌱 EXPLAIN LIKE I'M A BEGINNER: What is this movement/era about in simple, everyday language? Why did it start, and how does it connect to what came before?
+2. 📅 MASTER CHRONOLOGY TABLE (ALL MAJOR AUTHORS & WORKS): List every major author in this topic chronologically with their birth-death years, and a chronological list of their works with exact publication years, subtitles, and genres.
+3. 📖 DEEP PLOT SUMMARIES & CHARACTER MAPS: Give detailed plot summaries and character lists (protagonists, antagonists, minor characters, settings) of the most important texts in this module so a first-time reader understands the whole story.
+4. 🎯 TOP 15 ONE-LINER FACTS & QUOTES FOR UGC NET: Famous opening/closing lines, prefaces, dedications, awards (Sahitya Akademi, Booker, Nobel), and critic quotes.
+Format your response in clean HTML using <h4>, <p>, <ul>, <li>, and <strong> tags (no markdown code fences).`;
+    }
+
+    // Option A: Copy Prompt & Open Your NetJrf Gemini Notebook
+    function askGeminiNotebookLM(modId) {
+      const mod = MODULE_MAP[modId] || ALL_MODULES[0];
+      const promptText = buildDeepTeachingPrompt(mod).replace(/Format your response.*$/m, "Use my uploaded notebook sources (World Literature in Your Fist and YCT Solved Papers) to give me every detail, chronology, plot summary, and character list.");
+      navigator.clipboard.writeText(promptText).then(() => {
+        showToast("📋 Prompt copied! Paste (Ctrl+V) it into your NetJrf Notebook window that just opened.");
+        window.open(NOTEBOOK_LM_URL, "_blank");
+      }).catch(() => {
+        window.open(NOTEBOOK_LM_URL, "_blank");
+      });
+    }
+
+// Option B: Live In-Page AI Generation using Gemini 3.8 Flash + Automatic Fallback + Firebase Caching
+    async function generateInPageAILecture(modId, customQuestion = "") {
+      const mod = MODULE_MAP[modId] || ALL_MODULES[0];
+      const apiKey = getGeminiApiKey();
+
+      if (!apiKey) {
+        configureGeminiApiKey();
+        if (!getGeminiApiKey()) return;
+      }
+
+      const outputBox = document.getElementById(`aiOutputBox_${modId}`);
+      const statusEl = document.getElementById(`aiStatusText_${modId}`);
+      if (outputBox) {
+        outputBox.classList.remove("hidden");
+        outputBox.innerHTML = `
+          <div class="flex items-center gap-3 text-indigo-900 py-4">
+            <div class="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-xs font-semibold">✨ Gemini 3.8 Flash Professor is writing your complete, beginner-friendly lecture, chronologies & plot guides for "${mod.title}"...</span>
+          </div>
+        `;
+      }
+
+      const promptText = buildDeepTeachingPrompt(mod, customQuestion);
+      const candidateModels = [
+        "gemini-3.8-flash",
+        "gemini-3.0-flash",
+        "gemini-flash-latest"
+      ];
+
+      try {
+        let data = null;
+        let lastError = "";
+
+        for (const modelName of candidateModels) {
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${getGeminiApiKey()}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: promptText }] }],
+                generationConfig: { temperature: 0.35 }
+              })
+            }
+          );
+
+          const resJson = await response.json();
+          if (!resJson.error) {
+            data = resJson;
+            break;
+          } else {
+            lastError = resJson.error.message || "Model error";
+          }
+        }
+
+        if (!data) {
+          throw new Error(lastError || "Could not connect to Gemini API.");
+        }
+
+        let rawHtml = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
+        rawHtml = rawHtml.replace(/^```html\s*/i, "").replace(/```$/i, "").trim();
+
+        aiLectureCache[modId] = rawHtml;
+        localStorage.setItem("ugc_net_ai_cache_v1", JSON.stringify(aiLectureCache));
+
+        // Save to Firebase so it's permanently stored in the cloud for this module!
+        const dbUrl = getCleanDbUrl();
+        if (dbUrl) {
+          fetch(`${dbUrl}/ai_lectures/${modId}.json`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ html: rawHtml, updatedAt: new Date().toISOString() })
+          }).catch(() => {});
+        }
+
+        if (outputBox) {
+          outputBox.innerHTML = `
+            <div class="flex items-center justify-between border-b border-indigo-200 pb-2 mb-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-indigo-800">✨ AI Professor Deep-Dive Lecture (Beginner-Friendly + Full Chronologies)</span>
+              <span class="text-[11px] text-emerald-700 font-semibold">✓ Saved for Offline & Cloud</span>
+            </div>
+            <div class="prose-lecture text-slate-800 space-y-2 text-sm leading-relaxed">${rawHtml}</div>
+          `;
+        }
+        if (statusEl) statusEl.textContent = "✓ AI Lecture Loaded";
+      } catch (err) {
+        if (outputBox) {
+          outputBox.innerHTML = `
+            <div class="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+              <strong>AI Connection Note:</strong> ${err.message}. 
+              <button onclick="configureGeminiApiKey()" class="underline font-bold ml-1">Check API Key</button> or click <strong>"📓 Ask NetJrf Notebook ↗"</strong> above!
+            </div>
+          `;
+        }
+      }
+    }
+
+    function handleCustomAIQuestion(e, modId) {
+      e.preventDefault();
+      const input = document.getElementById(`customAiQuestion_${modId}`);
+      if (!input || !input.value.trim()) return;
+      generateInPageAILecture(modId, input.value.trim());
+    }
+
+    // Automatically inject the AI Professor Bar into renderMainLectureArea
+    const _origRenderMainLectureArea = renderMainLectureArea;
+    renderMainLectureArea = function() {
+      _origRenderMainLectureArea();
+      if (state.activeMode === "revision") return;
+
+      const mod = MODULE_MAP[state.activeModuleId] || ALL_MODULES[0];
+      const container = document.getElementById("mainContentArea");
+      const proseSection = container.querySelector(".prose-lecture");
+      if (!proseSection) return;
+
+      const cachedHtml = aiLectureCache[mod.id] || "";
+      const aiPanel = document.createElement("div");
+      aiPanel.className = "bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 border-2 border-indigo-300 rounded-xl p-5 shadow-sm mb-6";
+      aiPanel.innerHTML = `
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-indigo-800 bg-white px-2.5 py-0.5 rounded-full border border-indigo-200">
+              ✨ AI Mode & Gemini Notebook Integration
+            </span>
+            <h3 class="text-sm font-bold text-slate-900 mt-1">Want this topic explained from scratch with full plot summaries & chronologies?</h3>
+            <p class="text-xs text-slate-600 mt-0.5">Generate an in-depth beginner lecture right here, or query your uploaded PDFs in your <strong>NetJrf Gemini Notebook</strong>.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="generateInPageAILecture('${mod.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-sm transition">
+              ✨ ${cachedHtml ? "Regenerate AI Deep Lecture" : "AI Teach Me Thoroughly"}
+            </button>
+            <button onclick="askGeminiNotebookLM('${mod.id}')" class="bg-white hover:bg-indigo-50 text-indigo-900 border border-indigo-300 text-xs font-bold px-3 py-2 rounded-lg shadow-sm transition" title="Copies a detailed study prompt for this module and opens your NetJrf Gemini Notebook">
+              📓 Ask NetJrf Notebook ↗
+            </button>
+            <button onclick="configureGeminiApiKey()" class="text-[11px] text-slate-500 hover:text-indigo-700 underline px-1.5 py-1" title="Set your Gemini API Key">
+              🔑 API Key
+            </button>
+          </div>
+        </div>
+
+        <!-- Ask a Specific Question about this Module (e.g., "Tell me the full story of Coolie and Narayan's chronology") -->
+        <form onsubmit="handleCustomAIQuestion(event, '${mod.id}')" class="mt-3 flex gap-2">
+          <input id="customAiQuestion_${mod.id}" type="text" placeholder="Ask AI anything on this module (e.g., 'Explain Mulk Raj Anand\\'s Coolie plot & full chronology of R.K. Narayan')..." 
+            class="flex-1 text-xs bg-white border border-indigo-200 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-600" />
+          <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shrink-0 transition">
+            Ask AI →
+          </button>
+        </form>
+
+        <!-- Dynamic AI Output Container -->
+        <div id="aiOutputBox_${mod.id}" class="${cachedHtml ? "" : "hidden"} mt-4 bg-white border border-indigo-200 rounded-xl p-5 shadow-inner">
+          ${cachedHtml ? `
+            <div class="flex items-center justify-between border-b border-indigo-100 pb-2 mb-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-indigo-800">✨ Saved AI Professor Lecture</span>
+              <span class="text-[11px] text-emerald-700 font-semibold">✓ Ready</span>
+            </div>
+            <div class="prose-lecture text-slate-800 space-y-2 text-sm leading-relaxed">${cachedHtml}</div>
+          ` : ""}
+        </div>
+      `;
+
+      proseSection.parentNode.insertBefore(aiPanel, proseSection);
+
+      // If not cached locally yet, check if a classmate already generated it in Firebase!
+      if (!cachedHtml) {
+        const dbUrl = getCleanDbUrl();
+        if (dbUrl) {
+          fetch(`${dbUrl}/ai_lectures/${mod.id}.json`)
+            .then(r => r.json())
+            .then(d => {
+              if (d && d.html) {
+                aiLectureCache[mod.id] = d.html;
+                localStorage.setItem("ugc_net_ai_cache_v1", JSON.stringify(aiLectureCache));
+                const box = document.getElementById(`aiOutputBox_${mod.id}`);
+                if (box) {
+                  box.classList.remove("hidden");
+                  box.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-indigo-100 pb-2 mb-3">
+                      <span class="text-xs font-bold uppercase tracking-wider text-indigo-800">✨ Cloud-Synced AI Professor Lecture</span>
+                      <span class="text-[11px] text-emerald-700 font-semibold">☁️ Loaded from Cloud</span>
+                    </div>
+                    <div class="prose-lecture text-slate-800 space-y-2 text-sm leading-relaxed">${d.html}</div>
+                  `;
+                }
+              }
+            })
+            .catch(() => {});
+        }
+      }
+    };
+
+    // Re-render once so the AI bar appears immediately on startup
+    renderAll();
   </script>
 </body>
 </html>
