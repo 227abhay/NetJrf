@@ -3782,6 +3782,75 @@ Format your output in clean, structured HTML using <h4>, <p>, <ul>, <li>, <stron
     }
 
     initTopGifBanner();
+  // ============================================================================
+    // 11. DARK MODE TOGGLE (SAVES PREFERENCE TO LOCALSTORAGE)
+    // ============================================================================
+    function initDarkModeToggle() {
+      // 1. Inject Dark Mode Tailwind & CSS overrides into document head
+      const darkStyle = document.createElement("style");
+      darkStyle.innerHTML = `
+        /* Dark Theme Variables & Backgrounds */
+        body.dark-mode { background-color: #0b0f19 !important; color: #f1f5f9 !important; }
+        body.dark-mode header { background-color: #1e293b !important; border-color: #334155 !important; color: #f1f5f9 !important; }
+        body.dark-mode header h1 { color: #f8fafc !important; }
+        body.dark-mode header span { color: #94a3b8 !important; }
+        body.dark-mode header button { background-color: #334155 !important; border-color: #475569 !important; color: #e2e8f0 !important; }
+        body.dark-mode header button:hover { background-color: #475569 !important; }
+        
+        /* Containers & Cards */
+        body.dark-mode .bg-white { background-color: #1e293b !important; border-color: #334155 !important; color: #f1f5f9 !important; }
+        body.dark-mode .bg-slate-50, body.dark-mode .bg-slate-50\\/50 { background-color: #0f172a !important; border-color: #334155 !important; color: #e2e8f0 !important; }
+        body.dark-mode .bg-slate-100 { background-color: #334155 !important; color: #f1f5f9 !important; }
+        body.dark-mode .text-slate-950, body.dark-mode .text-slate-900, body.dark-mode .text-slate-800, body.dark-mode .text-slate-700 { color: #f1f5f9 !important; }
+        body.dark-mode .text-slate-500, body.dark-mode .text-slate-400 { color: #94a3b8 !important; }
+        body.dark-mode .divide-y > * { border-color: #334155 !important; }
+        body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; border-color: #475569 !important; color: #ffffff !important; }
+        
+        /* Accent boxes (Amber / Indigo / Emerald) in Dark Mode */
+        body.dark-mode .bg-amber-50 { background-color: #451a03 !important; border-color: #78350f !important; color: #fef3c7 !important; }
+        body.dark-mode .text-amber-900, body.dark-mode .text-amber-950 { color: #fde68a !important; }
+        body.dark-mode .bg-emerald-50 { background-color: #064e3b !important; border-color: #065f46 !important; color: #d1fae5 !important; }
+        body.dark-mode .text-emerald-700, body.dark-mode .text-emerald-800 { color: #34d399 !important; }
+        body.dark-mode .bg-indigo-50 { background-color: #312e81 !important; border-color: #3730a3 !important; color: #e0e7ff !important; }
+        body.dark-mode .text-indigo-700, body.dark-mode .text-indigo-950 { color: #818cf8 !important; }
+        body.dark-mode .prose-lecture p, body.dark-mode .prose-lecture h4 { color: #cbd5e1 !important; }
+        body.dark-mode .prose-lecture h4 { color: #f8fafc !important; }
+      `;
+      document.head.appendChild(darkStyle);
+
+      // 2. Inject Dark Mode Button into Top Navigation Bar
+      const undoBtn = document.getElementById("undoActionBtn");
+      if (undoBtn && undoBtn.parentElement) {
+        const darkToggleBtn = document.createElement("button");
+        darkToggleBtn.id = "darkModeToggleBtn";
+        darkToggleBtn.onclick = toggleDarkMode;
+        darkToggleBtn.className = "text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-800 transition shadow-sm flex items-center gap-1.5";
+        darkToggleBtn.title = "Toggle Dark / Light Theme";
+        
+        const isDark = localStorage.getItem("ugc_net_dark_mode") === "true";
+        if (isDark) {
+          document.body.classList.add("dark-mode");
+          darkToggleBtn.innerHTML = `☀️ Light Mode`;
+        } else {
+          darkToggleBtn.innerHTML = `🌙 Dark Mode`;
+        }
+
+        undoBtn.parentElement.insertBefore(darkToggleBtn, undoBtn);
+      }
+    }
+
+    function toggleDarkMode() {
+      const isDark = document.body.classList.toggle("dark-mode");
+      localStorage.setItem("ugc_net_dark_mode", isDark ? "true" : "false");
+      
+      const btn = document.getElementById("darkModeToggleBtn");
+      if (btn) {
+        btn.innerHTML = isDark ? `☀️ Light Mode` : `🌙 Dark Mode`;
+      }
+      showToast(isDark ? "🌙 Dark Mode enabled." : "☀️ Light Mode enabled.");
+    }
+
+    window.addEventListener("DOMContentLoaded", initDarkModeToggle);
   </script>
 </body>
 </html>
