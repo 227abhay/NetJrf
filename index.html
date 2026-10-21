@@ -5,14 +5,66 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UGC NET/JRF English • 45-Day Schedule By Abhay</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
+ <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
+    
+    /* CORE MOBILE & DESKTOP FLOW FIX */
+    html, body {
+      font-family: 'Inter', sans-serif; 
+      background-color: #f8fafc; 
+      color: #0f172a; 
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      -webkit-overflow-scrolling: touch; /* Smooth iOS momentum scrolling */
+    }
+
     .serif { font-family: 'Playfair Display', serif; }
     .fade-in { animation: fadeIn 0.18s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
     .prose-lecture p { margin-bottom: 0.9rem; line-height: 1.75; color: #334155; font-size: 0.94rem; }
     .prose-lecture h4 { font-weight: 700; color: #0f172a; margin-top: 1.25rem; margin-bottom: 0.4rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem; }
+
+    /* ================================================================= */
+    /* STEP 1 & STEP 2: MOBILE VIEWPORT & SCROLL TRAP ELIMINATOR        */
+    /* ================================================================= */
+    @media (max-width: 1023px) {
+      /* Unlock body and html height traps */
+      html, body {
+        height: auto !important;
+        overflow-y: auto !important;
+        position: static !important;
+      }
+
+      /* Release the left sidebar from any sticky/fixed/max-height traps */
+      aside, #allModulesDrawer {
+        position: relative !important;
+        top: auto !important;
+        max-height: none !important;
+        overflow-y: visible !important;
+        height: auto !important;
+      }
+
+      /* Release main workspace and lecture container from fixed heights */
+      main {
+        display: flex !important;
+        flex-direction: column !important;
+        height: auto !important;
+        min-height: auto !important;
+        overflow: visible !important;
+      }
+
+      #mainContentArea {
+        height: auto !important;
+        min-height: auto !important;
+        overflow: visible !important;
+      }
+
+      /* Prevent mobile keyboards or flex containers from squishing text */
+      header {
+        position: relative !important;
+      }
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -30,10 +82,14 @@
           ↶ Undo
         </button>
         <div class="h-4 w-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-          <h1 class="font-bold tracking-tight text-base sm:text-lg">NET/JRF English <span class="text-slate-400 font-normal text-xs sm:text-sm">45-Day Schedule By Abhay</span></h1>
-        </div>
+        <div class="flex items-center gap-2.5">
+  <!-- Replace the src="" below with your own local file (e.g., "study.gif") or any GIF URL -->
+  <img id="headerLogoGif" 
+       src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmlrMzd0ZzY0YTJwajE4NGRmNXNnaXFqcmo4bmEwODFwbHlmb2ZqMCZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9cw/BXjqytvu9bKzCUHdzz/200w.webp" 
+       alt="Study Animation" 
+       class="w-10 h-10 rounded-lg object-cover border border-indigo-200 shadow-sm" />
+  <h1 class="font-bold tracking-tight text-base sm:text-lg">NET/JRF English <span class="text-slate-400 font-normal text-xs sm:text-sm">45-Day Narrative Coach</span></h1>
+</div>
         <div class="relative shrink-0">
           <label for="headerSearchInput" class="sr-only">Search study modules</label>
           <input id="headerSearchInput" type="search" autocomplete="off"
@@ -3570,7 +3626,7 @@ Format your output in clean, structured HTML using <h4>, <p>, <ul>, <li>, <stron
               ✨ AI Professor
             </span>
             <h3 class="text-sm font-bold text-slate-900 mt-1">Want this topic explained from scratch with full plot summaries & chronologies?</h3>
-            <p class="text-xs text-slate-600 mt-0.5">Generate an in-depth beginner lecture right here, or query your uploaded PDFs in your <strong>NetJrf Gemini Notebook</strong>.</p>
+            <p class="text-xs text-slate-600 mt-0.5">Generate an in-depth beginner lecture right here.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="generateInPageAILecture('${mod.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-sm transition">
@@ -3587,7 +3643,7 @@ Format your output in clean, structured HTML using <h4>, <p>, <ul>, <li>, <stron
 
         <!-- Ask a Specific Question about this Module (e.g., "Tell me the full story of Coolie and Narayan's chronology") -->
         <form onsubmit="handleCustomAIQuestion(event, '${mod.id}')" class="mt-3 flex gap-2">
-          <input id="customAiQuestion_${mod.id}" type="text" placeholder="Ask AI anything on this module (e.g., 'Explain Mulk Raj Anand\\'s Coolie plot & full chronology of R.K. Narayan')..." 
+          <input id="customAiQuestion_${mod.id}" type="text" placeholder="Ask AI anything on this module..." 
             class="flex-1 text-xs bg-white border border-indigo-200 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-600" />
           <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shrink-0 transition">
             Ask AI →
@@ -3639,105 +3695,92 @@ Format your output in clean, structured HTML using <h4>, <p>, <ul>, <li>, <stron
     // Re-render once so the AI bar appears immediately on startup
     renderAll();
   // ============================================================================
-    // 9. DESKTOP FULL-SCREEN & FOCUS MODE UPGRADE (100% MONITOR WIDTH)
+    // 10. TOP ANIMATED GIF BANNER (CUSTOMIZABLE & SAVES TO LOCALSTORAGE)
     // ============================================================================
-    let isDesktopFocusMode = false;
+    const CUSTOM_GIF_KEY = "ugc_net_top_gif_url";
+    // Default cozy animated study/reading GIF
+    const DEFAULT_TOP_GIF = "https://media.giphy.com/media/l0HlRnAWXxn0MhKLK/giphy.gif";
 
-    function initDesktopWidescreenLayout() {
-      // 1. Expand Header and Main Workspace from max-w-6xl to 100% Full Desktop Width
-      const headerInner = document.querySelector("header > div");
-      const mainEl = document.querySelector("main");
-      const asideEl = document.querySelector("main > aside");
-      const sectionEl = document.querySelector("main > section");
+    function initTopGifBanner() {
+      const headerEl = document.querySelector("header");
+      if (!headerEl) return;
 
-      if (headerInner) {
-        headerInner.classList.remove("max-w-6xl");
-        headerInner.classList.add("w-full", "max-w-[1920px]", "px-6");
-      }
-      if (mainEl) {
-        mainEl.classList.remove("max-w-6xl");
-        mainEl.classList.add("w-full", "max-w-[1920px]", "px-6");
-      }
-      if (asideEl && sectionEl) {
-        // Give the sidebar 3 columns (25%) and the study area 9 columns (75%) on desktop
-        asideEl.classList.remove("lg:col-span-4");
-        asideEl.classList.add("lg:col-span-3", "lg:sticky", "lg:top-20", "lg:self-start", "lg:max-h-[calc(100vh-6rem)]", "lg:overflow-y-auto", "lg:pr-1");
-        sectionEl.classList.remove("lg:col-span-8");
-        sectionEl.classList.add("lg:col-span-9");
-      }
+      const savedGif = localStorage.getItem(CUSTOM_GIF_KEY) || DEFAULT_TOP_GIF;
+      const isHidden = localStorage.getItem("ugc_net_hide_gif") === "true";
 
-      // 2. Inject Desktop Typography & Widescreen Grid CSS
-      const styleEl = document.createElement("style");
-      styleEl.innerHTML = `
-        @media (min-width: 1024px) {
-          .prose-lecture p, .prose-lecture li { font-size: 1.02rem; line-height: 1.85; }
-          .prose-lecture h4 { font-size: 1.1rem; margin-top: 1.5rem; }
-          /* Make the 4 lecture cards display in a clean 2x2 desktop grid when in Focus Mode */
-          body.desktop-focus-mode .prose-lecture.space-y-5 {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 1.25rem;
-          }
-          body.desktop-focus-mode .prose-lecture.space-y-5 > div {
-            margin-top: 0 !important;
-          }
-        }
+      const bannerWrapper = document.createElement("div");
+      bannerWrapper.id = "topGifBannerWrapper";
+      bannerWrapper.className = "w-full max-w-[1920px] mx-auto px-6 pt-4";
+      bannerWrapper.innerHTML = `
+        <div id="topGifContainer" class="${isHidden ? 'hidden' : ''} relative w-full h-36 sm:h-44 rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-slate-900 flex items-center justify-between">
+          <!-- Background Animated GIF -->
+          <img id="topBannerGifImg" src="${savedGif}" alt="Study Vibe GIF" 
+               class="absolute inset-0 w-full h-full object-cover opacity-55" />
+          
+          <!-- Gradient Overlay & Quote Text -->
+          <div class="relative z-10 p-5 sm:p-6 text-white max-w-2xl">
+            <span class="text-[10px] font-bold uppercase tracking-widest bg-indigo-600/90 px-2.5 py-1 rounded-full">
+              🎓 UGC NET/JRF English • Study Sanctuary
+            </span>
+            <h2 class="serif text-xl sm:text-2xl font-bold mt-2 drop-shadow">
+              "“If you're going through hell, keep going.”
+— Winston Churchill
+            </h2>
+          </div>
+
+          <!-- Controls to Change or Hide GIF -->
+          <div class="relative z-10 p-4 self-start flex items-center gap-2">
+            <button onclick="changeTopGifUrl()" class="text-[11px] font-semibold bg-black/60 hover:bg-black/80 text-white px-2.5 py-1 rounded-lg backdrop-blur-sm border border-white/20 transition">
+              🖼️ Change GIF
+            </button>
+            <button onclick="toggleTopGifBanner()" class="text-[11px] font-semibold bg-black/60 hover:bg-black/80 text-white px-2 py-1 rounded-lg backdrop-blur-sm border border-white/20 transition" title="Hide Banner">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Small button to restore banner if hidden -->
+        <div id="restoreGifBtnBar" class="${isHidden ? 'flex' : 'hidden'} justify-end">
+          <button onclick="toggleTopGifBanner()" class="text-[11px] text-indigo-600 hover:underline font-medium">
+            + Show Top Study GIF Banner
+          </button>
+        </div>
       `;
-      document.head.appendChild(styleEl);
 
-      // 3. Add "🖥️ Focus / Full-Screen" Toggle Button to Top Navbar
-      const undoBtn = document.getElementById("undoActionBtn");
-      if (undoBtn && undoBtn.parentElement) {
-        const focusBtn = document.createElement("button");
-        focusBtn.id = "desktopFocusToggleBtn";
-        focusBtn.onclick = toggleDesktopFocusMode;
-        focusBtn.className = "hidden lg:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 transition shadow-sm";
-        focusBtn.title = "Toggle Sidebar to use 100% of your screen for reading (Shortcut: press 'F')";
-        focusBtn.innerHTML = `🖥️ Full-Screen Study`;
-        undoBtn.parentElement.insertBefore(focusBtn, undoBtn.nextSibling);
-      }
-
-      // 4. Desktop Keyboard Shortcuts: [F] for Full-Screen Focus, [Alt + Left/Right] for Modules
-      window.addEventListener("keydown", (e) => {
-        if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
-        if (e.key.toLowerCase() === "f" && !e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          toggleDesktopFocusMode();
-        }
-      });
+      // Insert right below the sticky header
+      headerEl.insertAdjacentElement("afterend", bannerWrapper);
     }
 
-    function toggleDesktopFocusMode() {
-      isDesktopFocusMode = !isDesktopFocusMode;
-      const asideEl = document.querySelector("main > aside");
-      const sectionEl = document.querySelector("main > section");
-      const btn = document.getElementById("desktopFocusToggleBtn");
+    function changeTopGifUrl() {
+      const current = localStorage.getItem(CUSTOM_GIF_KEY) || DEFAULT_TOP_GIF;
+      const nextUrl = prompt(
+        "🖼️ Paste any GIF URL (from Giphy, Tenor, Pinterest) OR enter your local GIF filename (e.g., my-banner.gif):",
+        current
+      );
+      if (nextUrl && nextUrl.trim() !== "") {
+        localStorage.setItem(CUSTOM_GIF_KEY, nextUrl.trim());
+        const img = document.getElementById("topBannerGifImg");
+        if (img) img.src = nextUrl.trim();
+        showToast("✓ Top Study GIF updated!");
+      }
+    }
 
-      if (!asideEl || !sectionEl) return;
-
-      if (isDesktopFocusMode) {
-        asideEl.classList.add("hidden");
-        sectionEl.classList.remove("lg:col-span-9");
-        sectionEl.classList.add("lg:col-span-12");
-        document.body.classList.add("desktop-focus-mode");
-        if (btn) {
-          btn.innerHTML = `📑 Show Sidebar`;
-          btn.className = "hidden lg:inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-indigo-600 bg-indigo-600 text-white transition shadow-sm";
-        }
-        showToast("🖥️ Full-Screen Study Mode enabled! (Press 'F' anytime to toggle sidebar)");
+    function toggleTopGifBanner() {
+      const container = document.getElementById("topGifContainer");
+      const restoreBar = document.getElementById("restoreGifBtnBar");
+      const currentlyHidden = container.classList.contains("hidden");
+      if (currentlyHidden) {
+        container.classList.remove("hidden");
+        restoreBar.classList.add("hidden");
+        localStorage.setItem("ugc_net_hide_gif", "false");
       } else {
-        asideEl.classList.remove("hidden");
-        sectionEl.classList.remove("lg:col-span-12");
-        sectionEl.classList.add("lg:col-span-9");
-        document.body.classList.remove("desktop-focus-mode");
-        if (btn) {
-          btn.innerHTML = `🖥️ Full-Screen Study`;
-          btn.className = "hidden lg:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 transition shadow-sm";
-        }
+        container.classList.add("hidden");
+        restoreBar.classList.remove("hidden");
+        localStorage.setItem("ugc_net_hide_gif", "true");
       }
     }
 
-    initDesktopWidescreenLayout();
+    initTopGifBanner();
   </script>
 </body>
 </html>
